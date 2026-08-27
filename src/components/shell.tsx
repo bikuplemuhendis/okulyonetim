@@ -8,13 +8,17 @@ import type { NavItem } from "@/lib/nav";
 import { ROLE_LABELS } from "@/lib/types";
 import { logoutAction } from "@/app/actions";
 
+import { TenantSwitcher } from "./org-ui";
+
 export function AppShell({
   actor,
   nav,
+  tenants,
   children,
 }: {
   actor: Actor;
   nav: NavItem[];
+  tenants?: { id: string; name: string }[];
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -63,6 +67,9 @@ export function AppShell({
           <div className="text-sm text-slate-600 truncate">
             {actor.name} · {ROLE_LABELS[actor.role]}
           </div>
+          {actor.role === "PLATFORM_SUPER_ADMIN" && tenants ? (
+            <TenantSwitcher tenants={tenants} currentId={actor.tenantId} />
+          ) : null}
           <form action={logoutAction}>
             <button className="btn btn-ghost" type="submit">
               Çıkış

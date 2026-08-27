@@ -5,8 +5,10 @@ export type NavItem = { href: string; label: string; group: string };
 export function navFor(role: Role): NavItem[] {
   const org: NavItem[] = [
     { href: "/panel", label: "Kokpit", group: "Genel" },
+    { href: "/panel/yapi", label: "Okul yapısı", group: "Organizasyon" },
     { href: "/panel/ayarlar", label: "Firma ayarları", group: "Organizasyon" },
     { href: "/panel/subeler", label: "Şubeler", group: "Organizasyon" },
+    { href: "/panel/binalar", label: "Binalar", group: "Organizasyon" },
     { href: "/panel/lokasyonlar", label: "Lokasyonlar", group: "Organizasyon" },
     { href: "/panel/kullanicilar", label: "Kullanıcılar", group: "Organizasyon" },
   ];
@@ -44,6 +46,8 @@ export function navFor(role: Role): NavItem[] {
     case "BRANCH_MANAGER":
       return [
         { href: "/panel", label: "Kokpit", group: "Genel" },
+        { href: "/panel/yapi", label: "Okul yapısı", group: "Organizasyon" },
+        { href: "/panel/binalar", label: "Binalar", group: "Organizasyon" },
         { href: "/panel/lokasyonlar", label: "Lokasyonlar", group: "Organizasyon" },
         { href: "/panel/kullanicilar", label: "Personel", group: "Organizasyon" },
         ...academic.filter((i) => i.href !== "/panel/import"),

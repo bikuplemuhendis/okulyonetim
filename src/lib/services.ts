@@ -3,18 +3,19 @@ import { prisma } from "./prisma";
 import type { Actor } from "./types";
 import { assertBranch, assertTenant, canStartSession, tenantFilter } from "./rbac";
 import {
+  applyKvkkMask,
   canCorrectAttendance,
   classifyAttendance,
+  inferGradeBand,
   interpolateTemplate,
   inQuietHours,
   liveColor,
   parseCsv,
+  SCHEDULE_CSV_HEADERS,
   shouldRateLimit,
   STUDENT_CSV_HEADERS,
-  SCHEDULE_CSV_HEADERS,
   validateScheduleCsvRow,
   validateStudentCsvRow,
-  applyKvkkMask,
 } from "./domain";
 import { clock, overlaps, timeToMinutes, DAY_LABELS } from "./time";
 import { writeAudit } from "./audit";
@@ -674,12 +675,16 @@ export async function importStudentsCsv(actor: Actor, branchId: string, csv: str
       where: { branchId, name: row.sinif },
     });
     if (!classroom) {
+      const gradeLevel = row.sinif.split("-")[0] || row.sinif;
+      const section = row.sinif.includes("-") ? row.sinif.split("-").slice(1).join("-") : null;
       classroom = await prisma.classroom.create({
         data: {
           tenantId: branch.tenantId,
           branchId,
           name: row.sinif,
-          gradeLevel: row.sinif.split("-")[0] || row.sinif,
+          gradeLevel,
+          section,
+          band: inferGradeBand(gradeLevel),
         },
       });
     }

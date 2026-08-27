@@ -2,6 +2,7 @@ import { requireActor } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell";
 import { finalizeSessionAction, markAttendanceAction } from "@/app/actions";
+import { assertTenant } from "@/lib/rbac";
 import { notFound } from "next/navigation";
 const colors: Record<string, string> = {
   PRESENT: "bg-emerald-100 text-emerald-800",
@@ -12,7 +13,7 @@ const colors: Record<string, string> = {
 };
 
 export default async function ClassbookPage({ params }: { params: Promise<{ sessionId: string }> }) {
-  await requireActor();
+  const actor = await requireActor();
   const { sessionId } = await params;
   const session = await prisma.lessonSession.findUnique({
     where: { id: sessionId },
@@ -23,6 +24,11 @@ export default async function ClassbookPage({ params }: { params: Promise<{ sess
     },
   });
   if (!session) notFound();
+  try {
+    assertTenant(actor, session.tenantId);
+  } catch {
+    notFound();
+  }
   return (
     <div>
       <PageHeader

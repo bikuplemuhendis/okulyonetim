@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { canViewCounseling } from "@/lib/domain";
 import { loadTenant, maskForActor } from "@/lib/services";
 import { formatTrDateTime } from "@/lib/time";
+import { assertTenant } from "@/lib/rbac";
 
 export default async function Student360({ params }: { params: Promise<{ studentId: string }> }) {
   const actor = await requireActor();
@@ -23,6 +24,11 @@ export default async function Student360({ params }: { params: Promise<{ student
     },
   });
   if (!student) notFound();
+  try {
+    assertTenant(actor, student.tenantId);
+  } catch {
+    notFound();
+  }
   const tenant = await loadTenant(actor);
   const absences = student.attendance.filter((a) => a.status === "ABSENT").length;
   const lates = student.attendance.filter((a) => a.status === "LATE").length;

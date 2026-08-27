@@ -3,6 +3,36 @@ import { timeToMinutes } from "./time";
 
 export type LiveColor = "green" | "yellow" | "red" | "gray" | "white";
 
+export const GRADE_BANDS: { value: string; label: string }[] = [
+  { value: "ANAOKULU", label: "Anaokulu" },
+  { value: "ILKOKUL", label: "İlkokul" },
+  { value: "ORTAOKUL", label: "Ortaokul" },
+  { value: "LISE", label: "Lise" },
+  { value: "DIGER", label: "Diğer" },
+];
+
+export const GRADE_LEVELS = ["Hazırlık", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+
+export const CLASS_SECTIONS = ["A", "B", "C", "D", "E", "F", "G", "H"];
+
+export function composeClassroomName(gradeLevel: string, section?: string | null) {
+  const g = gradeLevel.trim();
+  const s = (section ?? "").trim();
+  if (!g) return s;
+  if (!s) return g;
+  return `${g}-${s}`;
+}
+
+export function inferGradeBand(gradeLevel: string): string {
+  const n = Number(gradeLevel);
+  if (gradeLevel === "Hazırlık") return "LISE";
+  if (!Number.isFinite(n)) return "DIGER";
+  if (n <= 4) return "ILKOKUL";
+  if (n <= 8) return "ORTAOKUL";
+  if (n <= 12) return "LISE";
+  return "DIGER";
+}
+
 export function classifyAttendance(opts: {
   checkInAtMinutes: number;
   sessionStart: string;

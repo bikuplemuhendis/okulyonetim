@@ -149,6 +149,7 @@ model Tenant {
   courses                      Course[]
   students                     Student[]
   locations                    Location[]
+  buildings                    Building[]
   schedules                    LessonSchedule[]
   sessions                     LessonSession[]
   announcements                Announcement[]
@@ -181,7 +182,20 @@ model Branch {
   scopes      UserBranchScope[]
   announcements Announcement[]
   incidents   Incident[]
+  buildings   Building[]
   @@unique([tenantId, code])
+}
+
+model Building {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId  String
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name      String
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  @@unique([branchId, name])
 }
 
 model Location {
@@ -202,6 +216,8 @@ model Location {
   schedules   LessonSchedule[]
   sessions    LessonSession[]
   incidents   Incident[]
+  classrooms  Classroom[]        @relation("ClassroomLocation")
+  @@unique([branchId, name])
 }
 
 model User {
@@ -224,6 +240,7 @@ model User {
   audits        AuditLog[]
   announcements Announcement[]
   marked        Attendance[]      @relation("AttendanceMarker")
+  advised       Classroom[]       @relation("ClassroomAdvisor")
 }
 
 model UserBranchScope {
@@ -242,11 +259,16 @@ model Classroom {
   branch      Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
   name        String
   gradeLevel  String
+  section     String?
+  band        String?
   advisorId   String?
+  advisor     User?            @relation("ClassroomAdvisor", fields: [advisorId], references: [id])
   locationId  String?
+  mappedLocation Location?     @relation("ClassroomLocation", fields: [locationId], references: [id])
   status      String           @default("ACTIVE")
   students    Student[]
   schedules   LessonSchedule[]
+  @@unique([branchId, name])
 }
 
 model Course {

@@ -4,10 +4,17 @@ import { PageHeader } from "@/components/shell";
 import { saveStudent } from "@/app/actions";
 import { tenantFilter } from "@/lib/rbac";
 import { loadTenant, maskForActor, scopedBranches } from "@/lib/services";
+import { Flash, NeedTenant } from "@/components/flash";
 import Link from "next/link";
 
-export default async function StudentsPage() {
+export default async function StudentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ err?: string; ok?: string }>;
+}) {
   const actor = await requireActor();
+  if (!actor.tenantId && actor.role === "PLATFORM_SUPER_ADMIN") return <NeedTenant />;
+  const sp = await searchParams;
   const where = tenantFilter(actor);
   const teacherClassIds =
     actor.role === "TEACHER"
@@ -26,7 +33,8 @@ export default async function StudentsPage() {
   const tenant = await loadTenant(actor);
   return (
     <div>
-      <PageHeader title="Öğrenciler" subtitle="Öğrenci no, sınıf, veli ve KVKK onayı. Kart UID alanı yoktur." />
+      <PageHeader title="Öğrenciler" subtitle="Öğrenci no, sınıf, veli bağlama ve KVKK onayı. Kart UID alanı yoktur." />
+      <Flash ok={sp.ok} err={sp.err} />
       {["PARENT", "STUDENT", "TEACHER"].includes(actor.role) ? null : (
         <form action={saveStudent} className="card p-5 mb-6 grid md:grid-cols-3 gap-3">
           <select className="select" name="branchId">
@@ -45,11 +53,24 @@ export default async function StudentsPage() {
           </select>
           <input className="input" name="studentNo" placeholder="Öğrenci no" required />
           <input className="input" name="name" placeholder="Ad soyad" required />
+          <input className="input" name="studentEmail" type="email" placeholder="Öğrenci e-posta (ops. giriş)" />
           <select className="select" name="status" defaultValue="ACTIVE">
             <option value="ACTIVE">Aktif</option>
             <option value="PASSIVE">Pasif</option>
             <option value="GRADUATED">Mezun</option>
           </select>
+          <input className="input" name="parentName" placeholder="Veli adı" />
+          <input className="input" name="parentEmail" type="email" placeholder="Veli e-posta" />
+          <input className="input" name="parentPhone" placeholder="Veli telefon" />
+          <select className="select" name="relationship" defaultValue="ANNE">
+            <option value="ANNE">Anne</option>
+            <option value="BABA">Baba</option>
+            <option value="VASI">Vasi</option>
+            <option value="DIGER">Diğer</option>
+          </select>
+          <label className="text-sm flex items-center gap-2">
+            <input type="checkbox" name="kvkkConsent" /> KVKK açık rıza (veli varsa zorunlu)
+          </label>
           <button className="btn btn-primary">Ekle</button>
         </form>
       )}

@@ -3,13 +3,20 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell";
 import { saveUser } from "@/app/actions";
 import { ROLE_LABELS } from "@/lib/types";
-import { tenantFilter } from "@/lib/rbac";
+import { assignableRoles, tenantFilter } from "@/lib/rbac";
 import { scopedBranches } from "@/lib/services";
 import { maskForActor, loadTenant } from "@/lib/services";
-import type { Role } from "@prisma/client";
+import { Flash, NeedTenant } from "@/components/flash";
+import Link from "next/link";
 
-export default async function UsersPage() {
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ err?: string; ok?: string; edit?: string }>;
+}) {
   const actor = await requireActor();
+  if (!actor.tenantId && actor.role === "PLATFORM_SUPER_ADMIN") return <NeedTenant />;
+  const sp = await searchParams;
   const tenant = await loadTenant(actor);
   const branches = await scopedBranches(actor);
   const users = await prisma.user.findMany({
@@ -17,25 +24,39 @@ export default async function UsersPage() {
     include: { scopes: { include: { branch: true } } },
     orderBy: { name: "asc" },
   });
-  const roles = Object.keys(ROLE_LABELS) as Role[];
+  const roles = assignableRoles(actor.role);
+  const editing = users.find((u) => u.id === sp.edit);
+  const editingScope = new Set(editing?.scopes.map((s) => s.branchId) ?? []);
   return (
     <div>
       <PageHeader title="Kullanıcılar / personel" subtitle="Rol + şube kapsamı. Pasif kullanıcı giriş yapamaz." />
+      <Flash ok={sp.ok} err={sp.err} />
       <form action={saveUser} className="card p-5 mb-6 grid md:grid-cols-2 gap-3">
-        <input className="input" name="name" placeholder="Ad soyad" required minLength={2} />
-        <input className="input" name="email" type="email" placeholder="E-posta" required />
-        <input className="input" name="phone" placeholder="Telefon" />
-        <input className="input" name="password" type="password" placeholder="Parola (boşsa Demo123!)" />
-        <select className="select" name="role" defaultValue="TEACHER">
-          {roles
-            .filter((r) => r !== "PLATFORM_SUPER_ADMIN" || actor.role === "PLATFORM_SUPER_ADMIN")
-            .map((r) => (
-              <option key={r} value={r}>
-                {ROLE_LABELS[r]}
-              </option>
-            ))}
+        {editing ? <input type="hidden" name="id" value={editing.id} /> : null}
+        <input className="input" name="name" placeholder="Ad soyad" required minLength={2} defaultValue={editing?.name ?? ""} />
+        <input
+          className="input"
+          name="email"
+          type="email"
+          placeholder="E-posta"
+          required
+          defaultValue={editing?.email ?? ""}
+        />
+        <input className="input" name="phone" placeholder="Telefon" defaultValue={editing?.phone ?? ""} />
+        <input
+          className="input"
+          name="password"
+          type="password"
+          placeholder={editing ? "Parola (boş bırakılırsa değişmez)" : "Parola (boşsa Demo123!)"}
+        />
+        <select className="select" name="role" defaultValue={editing?.role ?? "TEACHER"}>
+          {roles.map((r) => (
+            <option key={r} value={r}>
+              {ROLE_LABELS[r]}
+            </option>
+          ))}
         </select>
-        <select className="select" name="status" defaultValue="ACTIVE">
+        <select className="select" name="status" defaultValue={editing?.status ?? "ACTIVE"}>
           <option value="ACTIVE">Aktif</option>
           <option value="PASSIVE">Pasif</option>
         </select>
@@ -43,11 +64,16 @@ export default async function UsersPage() {
           <div className="font-medium mb-1">Kapsam (şube)</div>
           {branches.map((b) => (
             <label key={b.id} className="mr-3">
-              <input type="checkbox" name="branchIds" value={b.id} /> {b.name}
+              <input type="checkbox" name="branchIds" value={b.id} defaultChecked={editingScope.has(b.id)} /> {b.name}
             </label>
           ))}
         </div>
-        <button className="btn btn-primary">Kaydet</button>
+        <button className="btn btn-primary">{editing ? "Güncelle" : "Kaydet"}</button>
+        {editing ? (
+          <Link className="btn btn-ghost" href="/panel/kullanicilar">
+            Vazgeç
+          </Link>
+        ) : null}
       </form>
       <div className="card overflow-x-auto">
         <table className="table">
@@ -59,6 +85,7 @@ export default async function UsersPage() {
               <th>Rol</th>
               <th>Kapsam</th>
               <th>Durum</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -75,6 +102,11 @@ export default async function UsersPage() {
                   <td>{ROLE_LABELS[u.role]}</td>
                   <td>{u.scopes.map((s) => s.branch.name).join(", ") || "Firma"}</td>
                   <td>{u.status}</td>
+                  <td>
+                    <Link className="text-kampus-700 text-xs" href={`/panel/kullanicilar?edit=${u.id}`}>
+                      Düzenle
+                    </Link>
+                  </td>
                 </tr>
               );
             })}

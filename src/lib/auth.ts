@@ -3,7 +3,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
-import { SESSION_COOKIE, type Actor } from "./types";
+import { SESSION_COOKIE, TENANT_COOKIE, type Actor } from "./types";
 import { homePath } from "./rbac";
 
 const secret = () =>
@@ -45,6 +45,10 @@ export async function loginWithPassword(email: string, password: string) {
     include: { scopes: true, student: true },
   });
   if (!user || user.status !== "ACTIVE") return { error: "E-posta veya parola hatalı." };
+  if (user.tenantId) {
+    const tenant = await prisma.tenant.findUnique({ where: { id: user.tenantId } });
+    if (tenant && tenant.status !== "ACTIVE") return { error: "Firma hesabı pasif veya askıda." };
+  }
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) return { error: "E-posta veya parola hatalı." };
   const token = await signSession({
@@ -79,12 +83,20 @@ export async function getActor(): Promise<Actor | null> {
     include: { scopes: true, student: true },
   });
   if (!user || user.status !== "ACTIVE") return null;
+  let tenantId = user.tenantId;
+  if (user.role === "PLATFORM_SUPER_ADMIN") {
+    const selected = jar.get(TENANT_COOKIE)?.value;
+    if (selected) {
+      const tenant = await prisma.tenant.findUnique({ where: { id: selected }, select: { id: true } });
+      if (tenant) tenantId = tenant.id;
+    }
+  }
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     role: user.role,
-    tenantId: user.tenantId,
+    tenantId,
     branchIds: user.scopes.map((s) => s.branchId),
     studentId: user.student?.id ?? null,
   };
@@ -102,4 +114,18 @@ export async function requestMeta() {
     ip: h.get("x-forwarded-for") || h.get("x-real-ip") || "local",
     userAgent: h.get("user-agent") || "unknown",
   };
+}
+
+export async function setActiveTenantCookie(tenantId: string | null) {
+  const jar = await cookies();
+  if (!tenantId) {
+    jar.delete(TENANT_COOKIE);
+    return;
+  }
+  jar.set(TENANT_COOKIE, tenantId, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
 }

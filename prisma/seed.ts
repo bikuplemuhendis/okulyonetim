@@ -25,6 +25,7 @@ async function wipe() {
     "classroom",
     "course",
     "location",
+    "building",
     "user",
     "branch",
     "tenant",
@@ -184,12 +185,22 @@ async function main() {
     },
   });
 
+  await prisma.building.createMany({
+    data: [
+      { tenantId: tenant.id, branchId: cankaya.id, name: "Bina A" },
+      { tenantId: tenant.id, branchId: cankaya.id, name: "Bina B" },
+      { tenantId: tenant.id, branchId: kadikoy.id, name: "Ana Bina" },
+    ],
+  });
+
   const c12A = await prisma.classroom.create({
     data: {
       tenantId: tenant.id,
       branchId: cankaya.id,
       name: "12-A",
       gradeLevel: "12",
+      section: "A",
+      band: "LISE",
       advisorId: createdUsers["ogretmen@cankaya.local"],
       locationId: loc12A.id,
     },
@@ -200,6 +211,8 @@ async function main() {
       branchId: cankaya.id,
       name: "12-B",
       gradeLevel: "12",
+      section: "B",
+      band: "LISE",
       advisorId: createdUsers["ogretmen2@cankaya.local"],
       locationId: loc12B.id,
     },
@@ -210,6 +223,8 @@ async function main() {
       branchId: kadikoy.id,
       name: "9-A",
       gradeLevel: "9",
+      section: "A",
+      band: "LISE",
       advisorId: createdUsers["ogretmen@kadikoy.local"],
       locationId: loc9A.id,
     },

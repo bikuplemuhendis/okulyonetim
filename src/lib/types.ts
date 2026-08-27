@@ -11,6 +11,7 @@ export type Actor = {
 };
 
 export const SESSION_COOKIE = "kampus_session";
+export const TENANT_COOKIE = "kampus_tenant";
 export const DEMO_PASSWORD = "Demo123!";
 
 export const ROLE_LABELS: Record<Role, string> = {

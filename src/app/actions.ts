@@ -2,9 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { getActor, loginWithPassword, logout, requestMeta, requireActor } from "@/lib/auth";
+import { getActor, loginWithPassword, logout, requireActor, setActiveTenantCookie } from "@/lib/auth";
 import { writeAudit } from "@/lib/audit";
 import {
   finalizeSession,
@@ -15,11 +14,45 @@ import {
   sendBulkNotification,
   startSession,
 } from "@/lib/services";
-import { homePath } from "@/lib/rbac";
-import type { AttendanceStatus, LocationType, PrivacyLevel, Role } from "@prisma/client";
+import {
+  createTenant,
+  deleteBranch,
+  deleteBuilding,
+  deleteClassroom,
+  deleteCourse,
+  deleteLocation,
+  linkParent,
+  removeSchedule,
+  unlinkParent,
+  updateTenantSettings,
+  updateTenantStatus,
+  upsertBranch,
+  upsertBuilding,
+  upsertClassroom,
+  upsertCourse,
+  upsertLocation,
+  upsertSchedule,
+  upsertStudent,
+  upsertUser,
+} from "@/lib/org";
+import { homePath, assertTenant } from "@/lib/rbac";
+import type { AttendanceStatus, LocationType, PrivacyLevel, Relationship, Role } from "@prisma/client";
 
 function fd(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
+}
+
+function bounce(path: string, e: unknown): never {
+  const msg = e instanceof Error ? e.message : "İşlem başarısız";
+  redirect(`${path}?err=${encodeURIComponent(msg)}`);
+}
+
+async function runOrg(path: string, fn: () => Promise<unknown>) {
+  try {
+    await fn();
+  } catch (e) {
+    bounce(path, e);
+  }
 }
 
 export async function loginAction(_prev: unknown, form: FormData) {
@@ -33,151 +66,175 @@ export async function logoutAction() {
   redirect("/login");
 }
 
+export async function switchTenantAction(form: FormData) {
+  const actor = await requireActor();
+  if (actor.role !== "PLATFORM_SUPER_ADMIN") throw new Error("Yetkisiz");
+  const tenantId = fd(form, "tenantId");
+  await setActiveTenantCookie(tenantId || null);
+  revalidatePath("/", "layout");
+}
+
 export async function saveTenantSettings(form: FormData) {
   const actor = await requireActor();
-  const id = fd(form, "id");
-  if (!["PLATFORM_SUPER_ADMIN", "TENANT_OWNER"].includes(actor.role)) {
-    throw new Error("Yetkisiz");
-  }
-  const channels = form.getAll("channels").map(String);
-  await prisma.tenant.update({
-    where: { id },
-    data: {
+  await runOrg("/panel/ayarlar", () =>
+    updateTenantSettings(actor, {
+      id: fd(form, "id"),
       name: fd(form, "name"),
       taxNo: fd(form, "taxNo") || null,
+      academicYearStart: fd(form, "academicYearStart"),
+      academicYearEnd: fd(form, "academicYearEnd"),
       workStart: fd(form, "workStart"),
       workEnd: fd(form, "workEnd"),
       attendanceCorrectionHours: Number(fd(form, "attendanceCorrectionHours") || 48),
       lateThresholdMinutes: Number(fd(form, "lateThresholdMinutes") || 10),
       kvkkMasking: fd(form, "kvkkMasking") as "NONE" | "PHONE" | "EMAIL" | "BOTH",
-      notificationChannels: JSON.stringify(channels.length ? channels : ["IN_APP"]),
-    },
-  });
-  const meta = await requestMeta();
-  await writeAudit({ actor, action: "TENANT_UPDATE", entityType: "Tenant", entityId: id, ...meta });
+      notificationChannels: form.getAll("channels").map(String),
+      timezone: fd(form, "timezone") || undefined,
+    }),
+  );
   revalidatePath("/panel/ayarlar");
 }
 
 export async function saveBranch(form: FormData) {
   const actor = await requireActor();
-  const tenantId = actor.tenantId;
-  if (!tenantId) throw new Error("Tenant yok");
   const id = fd(form, "id");
-  const data = {
-    tenantId,
-    name: fd(form, "name"),
-    code: fd(form, "code"),
-    address: fd(form, "address"),
-    city: fd(form, "city"),
-    district: fd(form, "district"),
-    phone: fd(form, "phone") || null,
-    timezone: fd(form, "timezone") || "Europe/Istanbul",
-    status: fd(form, "status") || "ACTIVE",
-  };
-  if (id) await prisma.branch.update({ where: { id }, data });
-  else await prisma.branch.create({ data });
-  await writeAudit({ actor, action: id ? "BRANCH_UPDATE" : "BRANCH_CREATE", entityType: "Branch", entityId: id });
+  await runOrg(id ? `/panel/subeler/${id}` : "/panel/subeler", () =>
+    upsertBranch(actor, {
+      id: id || undefined,
+      name: fd(form, "name"),
+      code: fd(form, "code"),
+      address: fd(form, "address"),
+      city: fd(form, "city"),
+      district: fd(form, "district"),
+      phone: fd(form, "phone") || null,
+      timezone: fd(form, "timezone") || "Europe/Istanbul",
+      status: fd(form, "status") || "ACTIVE",
+    }),
+  );
   revalidatePath("/panel/subeler");
+  revalidatePath("/panel/yapi");
+}
+
+export async function deleteBranchAction(form: FormData) {
+  const actor = await requireActor();
+  await runOrg("/panel/subeler", () => deleteBranch(actor, fd(form, "id")));
+  redirect("/panel/subeler");
+}
+
+export async function saveBuilding(form: FormData) {
+  const actor = await requireActor();
+  await runOrg("/panel/binalar", () =>
+    upsertBuilding(actor, {
+      id: fd(form, "id") || undefined,
+      branchId: fd(form, "branchId"),
+      name: fd(form, "name"),
+      status: fd(form, "status") || "ACTIVE",
+    }),
+  );
+  revalidatePath("/panel/binalar");
+  revalidatePath("/panel/lokasyonlar");
+  revalidatePath("/panel/yapi");
+}
+
+export async function deleteBuildingAction(form: FormData) {
+  const actor = await requireActor();
+  await runOrg("/panel/binalar", () => deleteBuilding(actor, fd(form, "id")));
+  revalidatePath("/panel/binalar");
 }
 
 export async function saveLocation(form: FormData) {
   const actor = await requireActor();
-  const tenantId = actor.tenantId!;
-  const id = fd(form, "id");
-  const data = {
-    tenantId,
-    branchId: fd(form, "branchId"),
-    name: fd(form, "name"),
-    type: fd(form, "type") as LocationType,
-    building: fd(form, "building") || null,
-    floor: fd(form, "floor") || null,
-    capacity: fd(form, "capacity") ? Number(fd(form, "capacity")) : null,
-    direction: (fd(form, "direction") || "BOTH") as "IN" | "OUT" | "BOTH",
-    status: fd(form, "status") || "ACTIVE",
-  };
-  if (id) await prisma.location.update({ where: { id }, data });
-  else await prisma.location.create({ data });
+  await runOrg("/panel/lokasyonlar", () =>
+    upsertLocation(actor, {
+      id: fd(form, "id") || undefined,
+      branchId: fd(form, "branchId"),
+      name: fd(form, "name"),
+      type: fd(form, "type") as LocationType,
+      building: fd(form, "building") || null,
+      floor: fd(form, "floor") || null,
+      capacity: fd(form, "capacity") ? Number(fd(form, "capacity")) : null,
+      direction: (fd(form, "direction") || "BOTH") as "IN" | "OUT" | "BOTH",
+      status: fd(form, "status") || "ACTIVE",
+    }),
+  );
+  revalidatePath("/panel/lokasyonlar");
+  revalidatePath("/panel/yapi");
+}
+
+export async function deleteLocationAction(form: FormData) {
+  const actor = await requireActor();
+  await runOrg("/panel/lokasyonlar", () => deleteLocation(actor, fd(form, "id")));
   revalidatePath("/panel/lokasyonlar");
 }
 
 export async function saveUser(form: FormData) {
   const actor = await requireActor();
-  const id = fd(form, "id");
-  const email = fd(form, "email").toLowerCase();
-  const branches = form.getAll("branchIds").map(String);
-  const password = fd(form, "password");
-  const data = {
-    tenantId: actor.tenantId,
-    name: fd(form, "name"),
-    email,
-    phone: fd(form, "phone") || null,
-    role: fd(form, "role") as Role,
-    status: fd(form, "status") || "ACTIVE",
-  };
-  if (id) {
-    await prisma.user.update({
-      where: { id },
-      data: {
-        ...data,
-        ...(password ? { passwordHash: await bcrypt.hash(password, 10) } : {}),
-      },
-    });
-    await prisma.userBranchScope.deleteMany({ where: { userId: id } });
-    await prisma.userBranchScope.createMany({ data: branches.map((branchId) => ({ userId: id, branchId })) });
-  } else {
-    const user = await prisma.user.create({
-      data: {
-        ...data,
-        passwordHash: await bcrypt.hash(password || "Demo123!", 10),
-      },
-    });
-    await prisma.userBranchScope.createMany({
-      data: branches.map((branchId) => ({ userId: user.id, branchId })),
-    });
-  }
-  const meta = await requestMeta();
-  await writeAudit({ actor, action: "USER_UPSERT", entityType: "User", newValue: { email, role: data.role }, ...meta });
+  await runOrg("/panel/kullanicilar", () =>
+    upsertUser(actor, {
+      id: fd(form, "id") || undefined,
+      name: fd(form, "name"),
+      email: fd(form, "email"),
+      phone: fd(form, "phone") || null,
+      password: fd(form, "password") || undefined,
+      role: fd(form, "role") as Role,
+      status: fd(form, "status") || "ACTIVE",
+      branchIds: form.getAll("branchIds").map(String).filter(Boolean),
+    }),
+  );
   revalidatePath("/panel/kullanicilar");
 }
 
 export async function saveClassroom(form: FormData) {
   const actor = await requireActor();
-  const id = fd(form, "id");
-  const data = {
-    tenantId: actor.tenantId!,
-    branchId: fd(form, "branchId"),
-    name: fd(form, "name"),
-    gradeLevel: fd(form, "gradeLevel"),
-    advisorId: fd(form, "advisorId") || null,
-    locationId: fd(form, "locationId") || null,
-    status: fd(form, "status") || "ACTIVE",
-  };
-  if (id) await prisma.classroom.update({ where: { id }, data });
-  else await prisma.classroom.create({ data });
+  await runOrg("/panel/siniflar", () =>
+    upsertClassroom(actor, {
+      id: fd(form, "id") || undefined,
+      branchId: fd(form, "branchId"),
+      name: fd(form, "name") || undefined,
+      gradeLevel: fd(form, "gradeLevel"),
+      section: fd(form, "section") || null,
+      band: fd(form, "band") || null,
+      advisorId: fd(form, "advisorId") || null,
+      locationId: fd(form, "locationId") || null,
+      status: fd(form, "status") || "ACTIVE",
+    }),
+  );
+  revalidatePath("/panel/siniflar");
+  revalidatePath("/panel/yapi");
+}
+
+export async function deleteClassroomAction(form: FormData) {
+  const actor = await requireActor();
+  await runOrg("/panel/siniflar", () => deleteClassroom(actor, fd(form, "id")));
   revalidatePath("/panel/siniflar");
 }
 
 export async function saveCourse(form: FormData) {
   const actor = await requireActor();
-  const id = fd(form, "id");
-  const data = {
-    tenantId: actor.tenantId!,
-    name: fd(form, "name"),
-    subject: fd(form, "subject"),
-    code: fd(form, "code"),
-    durationMinutes: Number(fd(form, "durationMinutes") || 40),
-    attendanceType: (fd(form, "attendanceType") || "LESSON") as "LESSON" | "STUDY",
-  };
-  if (id) await prisma.course.update({ where: { id }, data });
-  else await prisma.course.create({ data });
+  await runOrg("/panel/dersler", () =>
+    upsertCourse(actor, {
+      id: fd(form, "id") || undefined,
+      name: fd(form, "name"),
+      subject: fd(form, "subject"),
+      code: fd(form, "code"),
+      durationMinutes: Number(fd(form, "durationMinutes") || 40),
+      attendanceType: (fd(form, "attendanceType") || "LESSON") as "LESSON" | "STUDY",
+    }),
+  );
+  revalidatePath("/panel/dersler");
+}
+
+export async function deleteCourseAction(form: FormData) {
+  const actor = await requireActor();
+  await runOrg("/panel/dersler", () => deleteCourse(actor, fd(form, "id")));
   revalidatePath("/panel/dersler");
 }
 
 export async function saveSchedule(form: FormData) {
   const actor = await requireActor();
-  await prisma.lessonSchedule.create({
-    data: {
-      tenantId: actor.tenantId!,
+  await runOrg("/panel/program", () =>
+    upsertSchedule(actor, {
+      id: fd(form, "id") || undefined,
       branchId: fd(form, "branchId"),
       classroomId: fd(form, "classroomId"),
       courseId: fd(form, "courseId"),
@@ -186,31 +243,65 @@ export async function saveSchedule(form: FormData) {
       dayOfWeek: Number(fd(form, "dayOfWeek")),
       startTime: fd(form, "startTime"),
       endTime: fd(form, "endTime"),
-    },
-  });
+    }),
+  );
   revalidatePath("/panel/program");
 }
 
 export async function deleteSchedule(form: FormData) {
-  await requireActor();
-  await prisma.lessonSchedule.delete({ where: { id: fd(form, "id") } });
+  const actor = await requireActor();
+  await runOrg("/panel/program", () => removeSchedule(actor, fd(form, "id")));
   revalidatePath("/panel/program");
 }
 
 export async function saveStudent(form: FormData) {
   const actor = await requireActor();
+  const parentEmail = fd(form, "parentEmail");
   const id = fd(form, "id");
-  const data = {
-    tenantId: actor.tenantId!,
-    branchId: fd(form, "branchId"),
-    classroomId: fd(form, "classroomId"),
-    studentNo: fd(form, "studentNo"),
-    name: fd(form, "name"),
-    status: fd(form, "status") || "ACTIVE",
-  };
-  if (id) await prisma.student.update({ where: { id }, data });
-  else await prisma.student.create({ data });
+  await runOrg(id ? `/panel/ogrenciler/${id}` : "/panel/ogrenciler", () =>
+    upsertStudent(actor, {
+      id: id || undefined,
+      branchId: fd(form, "branchId"),
+      classroomId: fd(form, "classroomId"),
+      studentNo: fd(form, "studentNo"),
+      name: fd(form, "name"),
+      status: fd(form, "status") || "ACTIVE",
+      studentEmail: fd(form, "studentEmail") || null,
+      parent: parentEmail
+        ? {
+            name: fd(form, "parentName") || "Veli",
+            email: parentEmail,
+            phone: fd(form, "parentPhone"),
+            relationship: (fd(form, "relationship") || "ANNE") as Relationship,
+            kvkkConsent: form.get("kvkkConsent") === "on",
+          }
+        : null,
+    }),
+  );
   revalidatePath("/panel/ogrenciler");
+}
+
+export async function linkParentAction(form: FormData) {
+  const actor = await requireActor();
+  const studentId = fd(form, "studentId");
+  await runOrg(`/panel/ogrenciler/${studentId}`, () =>
+    linkParent(actor, {
+      studentId,
+      name: fd(form, "name"),
+      email: fd(form, "email"),
+      phone: fd(form, "phone"),
+      relationship: (fd(form, "relationship") || "ANNE") as Relationship,
+      kvkkConsent: form.get("kvkkConsent") === "on",
+    }),
+  );
+  revalidatePath(`/panel/ogrenciler/${studentId}`);
+}
+
+export async function unlinkParentAction(form: FormData) {
+  const actor = await requireActor();
+  const studentId = fd(form, "studentId");
+  await runOrg(`/panel/ogrenciler/${studentId}`, () => unlinkParent(actor, fd(form, "id")));
+  revalidatePath(`/panel/ogrenciler/${studentId}`);
 }
 
 export async function startSessionAction(form: FormData) {
@@ -293,10 +384,14 @@ export async function saveCounseling(form: FormData) {
   if (actor.role !== "COUNSELOR" && actor.role !== "TENANT_OWNER" && actor.role !== "PLATFORM_SUPER_ADMIN") {
     throw new Error("Yetkisiz");
   }
+  const studentId = fd(form, "studentId");
+  const student = await prisma.student.findUnique({ where: { id: studentId } });
+  if (!student) throw new Error("Öğrenci yok");
+  assertTenant(actor, student.tenantId);
   await prisma.counselingRecord.create({
     data: {
-      tenantId: actor.tenantId!,
-      studentId: fd(form, "studentId"),
+      tenantId: student.tenantId,
+      studentId,
       counselorId: actor.id,
       occurredAt: new Date(fd(form, "occurredAt") || Date.now()),
       topic: fd(form, "topic"),
@@ -458,16 +553,28 @@ export async function importScheduleAction(_prev: unknown, form: FormData) {
 
 export async function saveTenant(form: FormData) {
   const actor = await requireActor();
-  if (actor.role !== "PLATFORM_SUPER_ADMIN") throw new Error("Yetkisiz");
-  await prisma.tenant.create({
-    data: {
+  try {
+    const tenant = await createTenant(actor, {
       name: fd(form, "name"),
-      academicYearStart: new Date(fd(form, "academicYearStart") || "2026-09-01"),
-      academicYearEnd: new Date(fd(form, "academicYearEnd") || "2027-06-15"),
+      academicYearStart: fd(form, "academicYearStart") || "2026-09-01",
+      academicYearEnd: fd(form, "academicYearEnd") || "2027-06-15",
       workStart: fd(form, "workStart") || "08:00",
       workEnd: fd(form, "workEnd") || "18:00",
-    },
-  });
+      ownerName: fd(form, "ownerName") || undefined,
+      ownerEmail: fd(form, "ownerEmail") || undefined,
+      ownerPassword: fd(form, "ownerPassword") || undefined,
+    });
+    await setActiveTenantCookie(tenant.id);
+  } catch (e) {
+    bounce("/panel/firmalar", e);
+  }
+  revalidatePath("/panel/firmalar");
+  revalidatePath("/", "layout");
+}
+
+export async function saveTenantStatus(form: FormData) {
+  const actor = await requireActor();
+  await runOrg("/panel/firmalar", () => updateTenantStatus(actor, fd(form, "id"), fd(form, "status")));
   revalidatePath("/panel/firmalar");
 }
 

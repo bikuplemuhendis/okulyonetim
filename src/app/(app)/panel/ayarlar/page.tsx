@@ -3,23 +3,43 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell";
 import { saveTenantSettings } from "@/app/actions";
 import { parseJsonArray } from "@/lib/types";
+import { Flash, NeedTenant, dateInputValue } from "@/components/flash";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ err?: string; ok?: string }>;
+}) {
   const actor = await requireActor();
-  const tenant = actor.tenantId
-    ? await prisma.tenant.findUnique({ where: { id: actor.tenantId } })
-    : null;
-  if (!tenant) return <p>Tenant bulunamadı.</p>;
+  const sp = await searchParams;
+  const tenant = actor.tenantId ? await prisma.tenant.findUnique({ where: { id: actor.tenantId } }) : null;
+  if (!tenant) return <NeedTenant />;
   const channels = parseJsonArray(tenant.notificationChannels);
   return (
     <div>
       <PageHeader title="Firma ayarları" subtitle="Akademik takvim, yoklama politikası, KVKK maskeleme ve bildirim kanalları." />
+      <Flash ok={sp.ok} err={sp.err} />
       <form action={saveTenantSettings} className="card p-6 grid md:grid-cols-2 gap-4 max-w-4xl">
         <input type="hidden" name="id" value={tenant.id} />
         <Field label="Firma adı" name="name" defaultValue={tenant.name} required />
         <Field label="Vergi No / MERSİS" name="taxNo" defaultValue={tenant.taxNo ?? ""} />
+        <Field
+          label="Akademik yıl başlangıç"
+          name="academicYearStart"
+          type="date"
+          defaultValue={dateInputValue(tenant.academicYearStart)}
+          required
+        />
+        <Field
+          label="Akademik yıl bitiş"
+          name="academicYearEnd"
+          type="date"
+          defaultValue={dateInputValue(tenant.academicYearEnd)}
+          required
+        />
         <Field label="Çalışma başlangıç" name="workStart" type="time" defaultValue={tenant.workStart} />
         <Field label="Çalışma bitiş" name="workEnd" type="time" defaultValue={tenant.workEnd} />
+        <Field label="Zaman dilimi" name="timezone" defaultValue={tenant.timezone} />
         <Field
           label="Yoklama düzeltme penceresi (saat)"
           name="attendanceCorrectionHours"
