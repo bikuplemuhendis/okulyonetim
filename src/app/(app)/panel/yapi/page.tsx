@@ -10,7 +10,12 @@ export default async function StructurePage() {
   if (!actor.tenantId && actor.role === "PLATFORM_SUPER_ADMIN") return <NeedTenant />;
   const tenant = actor.tenantId ? await prisma.tenant.findUnique({ where: { id: actor.tenantId } }) : null;
   const branches = await prisma.branch.findMany({
-    where: tenantFilter(actor),
+    where: {
+      ...tenantFilter(actor),
+      ...(["PLATFORM_SUPER_ADMIN", "TENANT_OWNER", "TENANT_OPS"].includes(actor.role)
+        ? {}
+        : { id: { in: actor.branchIds } }),
+    },
     include: {
       buildings: { orderBy: { name: "asc" } },
       locations: { orderBy: { name: "asc" } },

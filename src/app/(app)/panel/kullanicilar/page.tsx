@@ -20,7 +20,12 @@ export default async function UsersPage({
   const tenant = await loadTenant(actor);
   const branches = await scopedBranches(actor);
   const users = await prisma.user.findMany({
-    where: tenantFilter(actor),
+    where: {
+      ...tenantFilter(actor),
+      ...(!["PLATFORM_SUPER_ADMIN", "TENANT_OWNER", "TENANT_OPS"].includes(actor.role) && actor.branchIds.length
+        ? { scopes: { some: { branchId: { in: actor.branchIds } } } }
+        : {}),
+    },
     include: { scopes: { include: { branch: true } } },
     orderBy: { name: "asc" },
   });

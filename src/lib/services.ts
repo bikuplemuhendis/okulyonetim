@@ -39,6 +39,15 @@ export async function scopedBranches(actor: Actor) {
   return prisma.branch.findMany({ where, orderBy: { name: "asc" } });
 }
 
+export async function scopedBranchIds(actor: Actor) {
+  return (await scopedBranches(actor)).map((b) => b.id);
+}
+
+export function branchScopedWhere(actor: Actor, branchIds: string[]): { branchId?: { in: string[] } } {
+  if (["PLATFORM_SUPER_ADMIN", "TENANT_OWNER", "TENANT_OPS"].includes(actor.role)) return {};
+  return { branchId: { in: branchIds } };
+}
+
 export async function startSession(actor: Actor, scheduleId: string, dateStr?: string) {
   if (!canStartSession(actor.role)) throw new Error("Oturum başlatma yetkiniz yok.");
   const schedule = await prisma.lessonSchedule.findUnique({

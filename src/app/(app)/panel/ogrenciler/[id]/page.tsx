@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell";
 import { linkParentAction, saveStudent, unlinkParentAction } from "@/app/actions";
 import { notFound } from "next/navigation";
-import { assertTenant } from "@/lib/rbac";
+import { assertBranch, assertTenant } from "@/lib/rbac";
 import { loadTenant, maskForActor } from "@/lib/services";
 import { Flash } from "@/components/flash";
 import { ConfirmDelete } from "@/components/org-ui";
@@ -35,6 +35,7 @@ export default async function StudentDetail({
   if (!student) notFound();
   try {
     assertTenant(actor, student.tenantId);
+    assertBranch(actor, student.branchId);
   } catch {
     notFound();
   }

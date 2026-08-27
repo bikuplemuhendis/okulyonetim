@@ -20,7 +20,13 @@ export default async function SchedulePage({
   const where = tenantFilter(actor);
   const teacherFilter = actor.role === "TEACHER" ? { teacherId: actor.id } : {};
   const rows = await prisma.lessonSchedule.findMany({
-    where: { ...where, ...teacherFilter },
+    where: {
+      ...where,
+      ...teacherFilter,
+      ...(!["PLATFORM_SUPER_ADMIN", "TENANT_OWNER", "TENANT_OPS"].includes(actor.role) && actor.branchIds.length
+        ? { branchId: { in: actor.branchIds } }
+        : {}),
+    },
     include: { classroom: true, course: true, teacher: true, location: true, branch: true },
     orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
   });

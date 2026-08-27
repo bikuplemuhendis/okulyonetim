@@ -7,7 +7,13 @@ import Link from "next/link";
 export default async function GuidanceList() {
   const actor = await requireActor();
   const students = await prisma.student.findMany({
-    where: { ...tenantFilter(actor), status: "ACTIVE" },
+    where: {
+      ...tenantFilter(actor),
+      status: "ACTIVE",
+      ...(!["PLATFORM_SUPER_ADMIN", "TENANT_OWNER", "TENANT_OPS"].includes(actor.role) && actor.branchIds.length
+        ? { branchId: { in: actor.branchIds } }
+        : {}),
+    },
     include: { classroom: true, _count: { select: { counseling: true, incidents: true } } },
     orderBy: { name: "asc" },
   });

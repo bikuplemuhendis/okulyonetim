@@ -24,6 +24,9 @@ export default async function StudentsPage({
     where: {
       ...where,
       ...(teacherClassIds.length ? { classroomId: { in: [...new Set(teacherClassIds)] } } : {}),
+      ...(!["PLATFORM_SUPER_ADMIN", "TENANT_OWNER", "TENANT_OPS"].includes(actor.role) && actor.branchIds.length
+        ? { branchId: { in: actor.branchIds } }
+        : {}),
     },
     include: { classroom: true, branch: true, parents: { include: { parent: true } } },
     orderBy: { name: "asc" },

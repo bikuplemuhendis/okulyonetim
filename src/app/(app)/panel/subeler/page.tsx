@@ -1,8 +1,8 @@
 import { requireActor } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell";
 import { saveBranch } from "@/app/actions";
-import { canManageBranches, tenantFilter } from "@/lib/rbac";
+import { canManageBranches } from "@/lib/rbac";
+import { scopedBranches } from "@/lib/services";
 import { Flash, NeedTenant } from "@/components/flash";
 import Link from "next/link";
 
@@ -14,10 +14,7 @@ export default async function BranchesPage({
   const actor = await requireActor();
   if (!actor.tenantId && actor.role === "PLATFORM_SUPER_ADMIN") return <NeedTenant />;
   const sp = await searchParams;
-  const branches = await prisma.branch.findMany({
-    where: tenantFilter(actor),
-    orderBy: { name: "asc" },
-  });
+  const branches = await scopedBranches(actor);
   const canEdit = canManageBranches(actor.role);
   return (
     <div>

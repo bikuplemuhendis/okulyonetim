@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import { canViewCounseling } from "@/lib/domain";
 import { loadTenant, maskForActor } from "@/lib/services";
 import { formatTrDateTime } from "@/lib/time";
-import { assertTenant } from "@/lib/rbac";
+import { assertBranch, assertTenant } from "@/lib/rbac";
 
 export default async function Student360({ params }: { params: Promise<{ studentId: string }> }) {
   const actor = await requireActor();
@@ -26,6 +26,7 @@ export default async function Student360({ params }: { params: Promise<{ student
   if (!student) notFound();
   try {
     assertTenant(actor, student.tenantId);
+    assertBranch(actor, student.branchId);
   } catch {
     notFound();
   }

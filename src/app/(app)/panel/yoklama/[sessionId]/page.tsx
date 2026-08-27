@@ -2,7 +2,7 @@ import { requireActor } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell";
 import { finalizeSessionAction, markAttendanceAction } from "@/app/actions";
-import { assertTenant } from "@/lib/rbac";
+import { assertBranch, assertTenant } from "@/lib/rbac";
 import { notFound } from "next/navigation";
 const colors: Record<string, string> = {
   PRESENT: "bg-emerald-100 text-emerald-800",

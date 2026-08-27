@@ -2,7 +2,7 @@ import { requireActor } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell";
 import { deleteBranchAction, saveBranch } from "@/app/actions";
-import { assertTenant, canManageBranches } from "@/lib/rbac";
+import { assertBranch, assertTenant, canManageBranches } from "@/lib/rbac";
 import { Flash } from "@/components/flash";
 import { ConfirmDelete } from "@/components/org-ui";
 import { notFound } from "next/navigation";
@@ -24,6 +24,7 @@ export default async function BranchDetail({
   if (!b) notFound();
   try {
     assertTenant(actor, b.tenantId);
+    assertBranch(actor, b.id);
   } catch {
     notFound();
   }

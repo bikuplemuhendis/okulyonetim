@@ -19,7 +19,12 @@ export default async function ClassroomsPage({
   const sp = await searchParams;
   const branches = await scopedBranches(actor);
   const classrooms = await prisma.classroom.findMany({
-    where: tenantFilter(actor),
+    where: {
+      ...tenantFilter(actor),
+      ...(branches.length && !["PLATFORM_SUPER_ADMIN", "TENANT_OWNER", "TENANT_OPS"].includes(actor.role)
+        ? { branchId: { in: branches.map((b) => b.id) } }
+        : {}),
+    },
     include: { branch: true, _count: { select: { students: true } } },
     orderBy: { name: "asc" },
   });
