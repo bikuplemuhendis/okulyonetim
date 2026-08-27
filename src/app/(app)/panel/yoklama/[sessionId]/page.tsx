@@ -26,6 +26,7 @@ export default async function ClassbookPage({ params }: { params: Promise<{ sess
   if (!session) notFound();
   try {
     assertTenant(actor, session.tenantId);
+    assertBranch(actor, session.schedule.branchId);
   } catch {
     notFound();
   }
