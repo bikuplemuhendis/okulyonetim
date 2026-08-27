@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+:root {
+  --kampus-950: #06222c;
+  --kampus-900: #0b3a4a;
+  --kampus-700: #0f4c5c;
+  --kampus-500: #1a7f92;
+  --kampus-100: #e7f4f7;
+  --accent: #e36414;
+  --bg: #f3f6f7;
+  --ink: #142026;
+}
+
+@theme inline {
+  --color-kampus-950: var(--kampus-950);
+  --color-kampus-900: var(--kampus-900);
+  --color-kampus-700: var(--kampus-700);
+  --color-kampus-500: var(--kampus-500);
+  --color-kampus-100: var(--kampus-100);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  border: 1px solid #d5dee3;
+  border-radius: 0.7rem;
+  padding: 0.55rem 0.75rem;
+  background: white;
+  font-size: 0.9rem;
+}
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: 2px solid #1a7f92;
+  outline-offset: 1px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.95rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 0;
+  cursor: pointer;
+}
+.btn-primary {
+  background: var(--kampus-700);
+  color: white;
+}
+.btn-primary:hover {
+  background: var(--kampus-900);
+}
+.btn-accent {
+  background: var(--accent);
+  color: white;
+}
+.btn-ghost {
+  background: white;
+  border: 1px solid #d5dee3;
+  color: var(--ink);
+}
+.card {
+  background: white;
+  border-radius: 1.1rem;
+  border: 1px solid #e4ecef;
+  box-shadow: 0 1px 2px rgb(15 35 45 / 0.04);
+}
+.table {
+  width: 100%;
+  font-size: 0.875rem;
+  border-collapse: collapse;
+}
+.table th {
+  text-align: left;
+  font-weight: 600;
+  color: #5b6b73;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid #e6eef1;
+}
+.table td {
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid #f0f4f6;
+  vertical-align: top;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.live-green {
+  background: #d9f5e3;
+  border-color: #67c587;
+}
+.live-yellow {
+  background: #fff4d6;
+  border-color: #e3c15b;
+}
+.live-red {
+  background: #fde2e1;
+  border-color: #e07a73;
+}
+.live-gray {
+  background: #eef1f3;
+  border-color: #c5ced3;
+}
+.live-white {
+  background: white;
+  border-color: #d7dfe3;
+}
