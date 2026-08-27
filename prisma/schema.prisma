@@ -1,0 +1,519 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PLATFORM_SUPER_ADMIN
+  TENANT_OWNER
+  TENANT_OPS
+  BRANCH_MANAGER
+  BRANCH_OPS
+  TEACHER
+  COUNSELOR
+  PARENT
+  STUDENT
+}
+
+enum LocationType {
+  CLASSROOM
+  GATE
+  LIBRARY
+  OTHER
+}
+
+enum LocationDirection {
+  IN
+  OUT
+  BOTH
+}
+
+enum AttendanceType {
+  LESSON
+  STUDY
+}
+
+enum SessionStatus {
+  PENDING
+  OPEN
+  FINALIZED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  EXCUSED
+  PENDING
+}
+
+enum AttendanceSource {
+  TEACHER
+  STUDENT_WEB
+  KIOSK
+  GATE
+  ADMIN
+  SYSTEM
+}
+
+enum CheckInKind {
+  GATE_IN
+  GATE_OUT
+  CLASS
+  LIBRARY
+}
+
+enum CheckInResult {
+  COUNTED
+  BUFFERED
+  IGNORED
+  UNAUTHORIZED
+}
+
+enum IncidentType {
+  ABSENCE
+  LATE
+  UNAUTHORIZED
+  UNPLANNED
+}
+
+enum IncidentStatus {
+  OPEN
+  CLASSIFIED
+  ACTIONED
+  CLOSED
+}
+
+enum PrivacyLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum NotificationChannel {
+  IN_APP
+  SMS
+  PUSH
+  EMAIL
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+  SUPPRESSED
+}
+
+enum KvkkMasking {
+  NONE
+  PHONE
+  EMAIL
+  BOTH
+}
+
+enum ExcuseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum Relationship {
+  ANNE
+  BABA
+  VASI
+  DIGER
+}
+
+model Tenant {
+  id                           String       @id @default(cuid())
+  name                         String
+  taxNo                        String?
+  academicYearStart            DateTime
+  academicYearEnd              DateTime
+  workStart                    String
+  workEnd                      String
+  attendanceCorrectionHours    Int          @default(48)
+  lateThresholdMinutes         Int          @default(10)
+  kvkkMasking                  KvkkMasking  @default(PHONE)
+  notificationChannels         String       @default("[\"IN_APP\",\"PUSH\"]")
+  timezone                     String       @default("Europe/Istanbul")
+  status                       String       @default("ACTIVE")
+  createdAt                    DateTime     @default(now())
+  branches                     Branch[]
+  users                        User[]
+  classrooms                   Classroom[]
+  courses                      Course[]
+  students                     Student[]
+  locations                    Location[]
+  buildings                    Building[]
+  schedules                    LessonSchedule[]
+  sessions                     LessonSession[]
+  announcements                Announcement[]
+  templates                    NotificationTemplate[]
+  notifications                NotificationRecord[]
+  audits                       AuditLog[]
+  incidents                    Incident[]
+  counseling                   CounselingRecord[]
+  excuses                      ExcuseRequest[]
+  checkIns                     CheckInEvent[]
+}
+
+model Branch {
+  id          String     @id @default(cuid())
+  tenantId    String
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  code        String
+  address     String
+  city        String
+  district    String
+  phone       String?
+  timezone    String     @default("Europe/Istanbul")
+  status      String     @default("ACTIVE")
+  createdAt   DateTime   @default(now())
+  locations   Location[]
+  classrooms  Classroom[]
+  students    Student[]
+  schedules   LessonSchedule[]
+  scopes      UserBranchScope[]
+  announcements Announcement[]
+  incidents   Incident[]
+  buildings   Building[]
+  @@unique([tenantId, code])
+}
+
+model Building {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId  String
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name      String
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  @@unique([branchId, name])
+}
+
+model Location {
+  id          String             @id @default(cuid())
+  tenantId    String
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId    String
+  branch      Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name        String
+  type        LocationType
+  building    String?
+  floor       String?
+  capacity    Int?
+  direction   LocationDirection  @default(BOTH)
+  classroomId String?
+  status      String             @default("ACTIVE")
+  checkIns    CheckInEvent[]
+  schedules   LessonSchedule[]
+  sessions    LessonSession[]
+  incidents   Incident[]
+  classrooms  Classroom[]        @relation("ClassroomLocation")
+  @@unique([branchId, name])
+}
+
+model User {
+  id            String            @id @default(cuid())
+  tenantId      String?
+  tenant        Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name          String
+  email         String            @unique
+  phone         String?
+  passwordHash  String
+  role          Role
+  status        String            @default("ACTIVE")
+  createdAt     DateTime          @default(now())
+  scopes        UserBranchScope[]
+  student       Student?
+  parentLinks   ParentStudent[]
+  taught        LessonSchedule[]  @relation("ScheduleTeacher")
+  sessions      LessonSession[]
+  counseling    CounselingRecord[]
+  audits        AuditLog[]
+  announcements Announcement[]
+  marked        Attendance[]      @relation("AttendanceMarker")
+  advised       Classroom[]       @relation("ClassroomAdvisor")
+}
+
+model UserBranchScope {
+  userId   String
+  branchId String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  @@id([userId, branchId])
+}
+
+model Classroom {
+  id          String           @id @default(cuid())
+  tenantId    String
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId    String
+  branch      Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name        String
+  gradeLevel  String
+  section     String?
+  band        String?
+  advisorId   String?
+  advisor     User?            @relation("ClassroomAdvisor", fields: [advisorId], references: [id])
+  locationId  String?
+  mappedLocation Location?     @relation("ClassroomLocation", fields: [locationId], references: [id])
+  status      String           @default("ACTIVE")
+  students    Student[]
+  schedules   LessonSchedule[]
+  @@unique([branchId, name])
+}
+
+model Course {
+  id                String         @id @default(cuid())
+  tenantId          String
+  tenant            Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name              String
+  subject           String
+  code              String
+  durationMinutes   Int
+  attendanceType    AttendanceType @default(LESSON)
+  schedules         LessonSchedule[]
+  @@unique([tenantId, code])
+}
+
+model Student {
+  id           String           @id @default(cuid())
+  tenantId     String
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId     String
+  branch       Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  classroomId  String
+  classroom    Classroom        @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  userId       String?          @unique
+  user         User?            @relation(fields: [userId], references: [id])
+  studentNo    String
+  name         String
+  status       String           @default("ACTIVE")
+  parents      ParentStudent[]
+  attendance   Attendance[]
+  checkIns     CheckInEvent[]
+  counseling   CounselingRecord[]
+  incidents    Incident[]
+  excuses      ExcuseRequest[]
+  prefs        NotificationPreference[]
+  notifications NotificationRecord[]
+  @@unique([branchId, studentNo])
+}
+
+model ParentStudent {
+  id           String       @id @default(cuid())
+  parentId     String
+  parent       User         @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  relationship Relationship @default(ANNE)
+  kvkkConsent  Boolean      @default(false)
+  @@unique([parentId, studentId])
+}
+
+model LessonSchedule {
+  id           String       @id @default(cuid())
+  tenantId     String
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId     String
+  branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  classroomId  String
+  classroom    Classroom    @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  courseId     String
+  course       Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacherId    String
+  teacher      User         @relation("ScheduleTeacher", fields: [teacherId], references: [id])
+  locationId   String
+  location     Location     @relation(fields: [locationId], references: [id])
+  dayOfWeek    Int
+  startTime    String
+  endTime      String
+  sessions     LessonSession[]
+}
+
+model LessonSession {
+  id          String           @id @default(cuid())
+  tenantId    String
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scheduleId  String
+  schedule    LessonSchedule   @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  locationId  String
+  location    Location         @relation(fields: [locationId], references: [id])
+  teacherId   String
+  teacher     User             @relation(fields: [teacherId], references: [id])
+  date        String
+  status      SessionStatus    @default(PENDING)
+  startedAt   DateTime?
+  endedAt     DateTime?
+  attendance  Attendance[]
+  checkIns    CheckInEvent[]
+  incidents   Incident[]
+}
+
+model Attendance {
+  id          String            @id @default(cuid())
+  sessionId   String
+  session     LessonSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status      AttendanceStatus
+  source      AttendanceSource
+  reason      String?
+  note        String?
+  markedAt    DateTime          @default(now())
+  markedById  String?
+  markedBy    User?             @relation("AttendanceMarker", fields: [markedById], references: [id])
+  @@unique([sessionId, studentId])
+}
+
+model CheckInEvent {
+  id          String          @id @default(cuid())
+  tenantId    String
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  locationId  String
+  location    Location        @relation(fields: [locationId], references: [id])
+  studentId   String
+  student     Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  sessionId   String?
+  session     LessonSession?  @relation(fields: [sessionId], references: [id])
+  kind        CheckInKind
+  result      CheckInResult
+  source      AttendanceSource
+  reason      String?
+  timestamp   DateTime        @default(now())
+}
+
+model Incident {
+  id          String         @id @default(cuid())
+  tenantId    String
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId    String
+  branch      Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  studentId   String?
+  student     Student?       @relation(fields: [studentId], references: [id])
+  locationId  String?
+  location    Location?      @relation(fields: [locationId], references: [id])
+  sessionId   String?
+  session     LessonSession? @relation(fields: [sessionId], references: [id])
+  type        IncidentType
+  status      IncidentStatus @default(OPEN)
+  note        String?
+  createdAt   DateTime       @default(now())
+}
+
+model CounselingRecord {
+  id            String       @id @default(cuid())
+  tenantId      String
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  counselorId   String
+  counselor     User         @relation(fields: [counselorId], references: [id])
+  occurredAt    DateTime
+  topic         String
+  notes         String
+  privacy       PrivacyLevel @default(MEDIUM)
+  actionPlan    String?
+  nextMeeting   DateTime?
+  createdAt     DateTime     @default(now())
+}
+
+model ExcuseRequest {
+  id          String       @id @default(cuid())
+  tenantId    String
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  parentId    String
+  date        String
+  reason      String
+  status      ExcuseStatus @default(PENDING)
+  reviewNote  String?
+  createdAt   DateTime     @default(now())
+}
+
+model Announcement {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId    String?
+  branch      Branch?  @relation(fields: [branchId], references: [id])
+  title       String
+  body        String
+  audience    String
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model NotificationTemplate {
+  id        String              @id @default(cuid())
+  tenantId  String
+  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  channel   NotificationChannel
+  title     String?
+  body      String
+  status    String              @default("ACTIVE")
+  notifications NotificationRecord[]
+  @@unique([tenantId, name, channel])
+}
+
+model NotificationRecord {
+  id           String              @id @default(cuid())
+  tenantId     String
+  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  templateId   String?
+  template     NotificationTemplate? @relation(fields: [templateId], references: [id])
+  studentId    String?
+  student      Student?            @relation(fields: [studentId], references: [id])
+  recipient    String
+  channel      NotificationChannel
+  title        String?
+  body         String
+  status       NotificationStatus  @default(SENT)
+  error        String?
+  createdAt    DateTime            @default(now())
+}
+
+model NotificationPreference {
+  id                   String  @id @default(cuid())
+  parentId             String
+  studentId            String
+  student              Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  gateIn               Boolean @default(true)
+  gateOut              Boolean @default(true)
+  late                 Boolean @default(true)
+  absence              Boolean @default(true)
+  lateThresholdMinutes Int     @default(10)
+  channels             String  @default("[\"IN_APP\",\"PUSH\"]")
+  quietStart           String?
+  quietEnd             String?
+  @@unique([parentId, studentId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String?
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id])
+  branchId   String?
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  action     String
+  entityType String
+  entityId   String?
+  oldValue   String?
+  newValue   String?
+  ip         String?
+  userAgent  String?
+  result     String   @default("SUCCESS")
+  createdAt  DateTime @default(now())
+}
