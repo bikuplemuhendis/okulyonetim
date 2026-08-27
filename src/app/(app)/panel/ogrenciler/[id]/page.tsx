@@ -7,6 +7,7 @@ import { assertBranch, assertTenant } from "@/lib/rbac";
 import { loadTenant, maskForActor } from "@/lib/services";
 import { Flash } from "@/components/flash";
 import { ConfirmDelete } from "@/components/org-ui";
+import { teacherClassroomIds } from "@/lib/sis-service";
 
 export default async function StudentDetail({
   params,
@@ -38,6 +39,10 @@ export default async function StudentDetail({
     assertBranch(actor, student.branchId);
   } catch {
     notFound();
+  }
+  if (actor.role === "TEACHER") {
+    const ids = await teacherClassroomIds(actor);
+    if (!ids.includes(student.classroomId)) notFound();
   }
   const tenant = await loadTenant(actor);
   const classrooms = await prisma.classroom.findMany({ where: { branchId: student.branchId } });

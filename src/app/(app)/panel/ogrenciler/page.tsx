@@ -23,7 +23,7 @@ export default async function StudentsPage({
   const students = await prisma.student.findMany({
     where: {
       ...where,
-      ...(teacherClassIds.length ? { classroomId: { in: [...new Set(teacherClassIds)] } } : {}),
+      ...(actor.role === "TEACHER" ? { classroomId: { in: [...new Set(teacherClassIds)] } } : {}),
       ...(!["PLATFORM_SUPER_ADMIN", "TENANT_OWNER", "TENANT_OPS"].includes(actor.role) && actor.branchIds.length
         ? { branchId: { in: actor.branchIds } }
         : {}),

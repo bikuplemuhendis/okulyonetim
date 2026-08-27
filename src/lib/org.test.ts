@@ -205,7 +205,7 @@ describe("okul yapısı izolasyonu", () => {
         startTime: "09:00",
         endTime: "09:40",
       }),
-    ).rejects.toThrow(/öğretmen/);
+    ).rejects.toThrow(/başka dersi/);
 
     const student = await upsertStudent(ownerA, {
       branchId: branchA.id,
