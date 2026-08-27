@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { canAssignRole, canManageBranches, canManageStudents, requireTenantId } from "./rbac";
+import {
+  canAssignRole,
+  canEnterGrades,
+  canManageBranches,
+  canManageFinance,
+  canManageStudents,
+  canManageTerms,
+  requireTenantId,
+} from "./rbac";
 import type { Actor } from "./types";
 import { composeClassroomName, inferGradeBand } from "./domain";
 
@@ -32,6 +40,21 @@ describe("tenant bağlamı", () => {
       branchIds: [],
     };
     expect(() => requireTenantId(actor)).toThrow(/firma/);
+  });
+});
+
+describe("sis yetkileri", () => {
+  it("öğretmen not girer, veli girmez", () => {
+    expect(canEnterGrades("TEACHER")).toBe(true);
+    expect(canEnterGrades("PARENT")).toBe(false);
+  });
+  it("sekreterlik tahsilat yapar", () => {
+    expect(canManageFinance("BRANCH_OPS")).toBe(true);
+    expect(canManageFinance("TEACHER")).toBe(false);
+  });
+  it("dönem yönetimini öğretmene kapatır", () => {
+    expect(canManageTerms("TEACHER")).toBe(false);
+    expect(canManageTerms("TENANT_OWNER")).toBe(true);
   });
 });
 

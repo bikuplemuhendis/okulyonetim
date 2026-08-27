@@ -1,5 +1,7 @@
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { mkdir, writeFile } from "fs/promises";
+import path from "path";
 import { clock, minutesToTime, timeToMinutes } from "../src/lib/time";
 
 const prisma = new PrismaClient();
@@ -7,6 +9,19 @@ const PASSWORD = "Demo123!";
 
 async function wipe() {
   const models = [
+    "payment",
+    "invoice",
+    "feeType",
+    "assignmentSubmission",
+    "assignment",
+    "examScore",
+    "exam",
+    "material",
+    "teacherNote",
+    "reportCardLine",
+    "reportCard",
+    "calendarEvent",
+    "academicTerm",
     "notificationRecord",
     "notificationPreference",
     "notificationTemplate",
@@ -661,6 +676,267 @@ async function main() {
       ip: "127.0.0.1",
       userAgent: "seed",
     },
+  });
+
+  const term1 = await prisma.academicTerm.create({
+    data: {
+      tenantId: tenant.id,
+      name: "2026-2027 1. Dönem",
+      startDate: new Date("2026-09-01"),
+      endDate: new Date("2027-01-20"),
+      isCurrent: true,
+      status: "ACTIVE",
+    },
+  });
+  await prisma.academicTerm.create({
+    data: {
+      tenantId: tenant.id,
+      name: "2026-2027 2. Dönem",
+      startDate: new Date("2027-02-01"),
+      endDate: new Date("2027-06-15"),
+      isCurrent: false,
+      status: "PLANNED",
+    },
+  });
+
+  await prisma.calendarEvent.createMany({
+    data: [
+      {
+        tenantId: tenant.id,
+        branchId: cankaya.id,
+        termId: term1.id,
+        authorId: createdUsers["mudur@cankaya.local"],
+        title: "1. dönem yazılı haftası",
+        body: "Çankaya şubesinde 10-14 Kasım yazılı sınav haftasıdır.",
+        startsAt: new Date("2026-11-10T08:00:00"),
+        endsAt: new Date("2026-11-14T17:00:00"),
+        type: "EXAM",
+      },
+      {
+        tenantId: tenant.id,
+        authorId: createdUsers["sahip@xkolej.local"],
+        title: "29 Ekim resmi tatil",
+        body: "Cumhuriyet Bayramı nedeniyle okullar kapalıdır.",
+        startsAt: new Date("2026-10-29T00:00:00"),
+        endsAt: new Date("2026-10-29T23:59:00"),
+        type: "HOLIDAY",
+      },
+      {
+        tenantId: tenant.id,
+        branchId: cankaya.id,
+        authorId: createdUsers["mudur@cankaya.local"],
+        title: "Veli toplantısı",
+        body: "12. sınıflar veli toplantısı Bina A konferans salonunda.",
+        startsAt: new Date("2026-11-05T18:00:00"),
+        endsAt: new Date("2026-11-05T20:00:00"),
+        allDay: false,
+        type: "MEETING",
+      },
+    ],
+  });
+
+  const examMat = await prisma.exam.create({
+    data: {
+      tenantId: tenant.id,
+      termId: term1.id,
+      branchId: cankaya.id,
+      courseId: mat.id,
+      classroomId: c12A.id,
+      teacherId: teacherA,
+      createdById: teacherA,
+      name: "1. Yazılı",
+      examDate: new Date("2026-11-12"),
+      examType: "WRITTEN",
+      maxScore: 100,
+      weight: 2,
+      published: true,
+    },
+  });
+  const examTur = await prisma.exam.create({
+    data: {
+      tenantId: tenant.id,
+      termId: term1.id,
+      branchId: cankaya.id,
+      courseId: tur.id,
+      classroomId: c12A.id,
+      teacherId: teacherB,
+      createdById: teacherB,
+      name: "1. Yazılı",
+      examDate: new Date("2026-11-13"),
+      maxScore: 100,
+      weight: 2,
+      published: true,
+    },
+  });
+  for (let i = 0; i < s12A.length; i++) {
+    await prisma.examScore.create({
+      data: {
+        tenantId: tenant.id,
+        examId: examMat.id,
+        studentId: s12A[i].id,
+        score: [88, 74, 91, 65, 80, 55, 70, 42][i],
+      },
+    });
+    await prisma.examScore.create({
+      data: {
+        tenantId: tenant.id,
+        examId: examTur.id,
+        studentId: s12A[i].id,
+        score: [82, 90, 70, 78, 61, 85, 73, 50][i],
+      },
+    });
+  }
+
+  const hw = await prisma.assignment.create({
+    data: {
+      tenantId: tenant.id,
+      termId: term1.id,
+      branchId: cankaya.id,
+      courseId: mat.id,
+      classroomId: c12A.id,
+      teacherId: teacherA,
+      title: "Türev problem seti",
+      body: "Kitap sayfa 42-45. Çözümleri PDF veya metin olarak yükleyin.",
+      dueAt: new Date(Date.now() + 5 * 86400 * 1000),
+      maxScore: 100,
+      weight: 1,
+      published: true,
+      status: "PUBLISHED",
+    },
+  });
+  await prisma.assignmentSubmission.create({
+    data: {
+      tenantId: tenant.id,
+      assignmentId: hw.id,
+      studentId: s12A[0].id,
+      body: "1-8. soruları çözdüm, 9. soruda takıldım.",
+      submittedAt: new Date(),
+      score: 90,
+      feedback: "Güzel çalışma, 9. soruya etütte bakalım.",
+      status: "GRADED",
+    },
+  });
+
+  const uploadDir = path.join(process.cwd(), "uploads");
+  await mkdir(uploadDir, { recursive: true });
+  await writeFile(
+    path.join(uploadDir, "seed-turev.txt"),
+    "Türev özet notu (demo). Zincir kuralı ve çarpım kuralı örnekleri.",
+    "utf8",
+  );
+  await prisma.material.create({
+    data: {
+      tenantId: tenant.id,
+      teacherId: teacherA,
+      branchId: cankaya.id,
+      courseId: mat.id,
+      classroomId: c12A.id,
+      title: "Türev özet notu",
+      description: "12-A matematik sınıfı ile paylaşılan çalışma kâğıdı.",
+      fileName: "turev-ozet.txt",
+      storedName: "seed-turev.txt",
+      mimeType: "text/plain",
+      sizeBytes: 80,
+      visibility: "CLASS",
+    },
+  });
+
+  const feeEdu = await prisma.feeType.create({
+    data: { tenantId: tenant.id, name: "Eğitim ücreti", amount: 25000, period: "TERM", description: "Dönemlik öğretim ücreti" },
+  });
+  const feeFood = await prisma.feeType.create({
+    data: { tenantId: tenant.id, name: "Yemek", amount: 3000, period: "MONTHLY" },
+  });
+  const feeBus = await prisma.feeType.create({
+    data: { tenantId: tenant.id, name: "Servis", amount: 4500, period: "MONTHLY" },
+  });
+  const invEdu = await prisma.invoice.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      studentId: s12A[0].id,
+      feeTypeId: feeEdu.id,
+      title: "2026-2027 1. dönem eğitim ücreti",
+      amount: 25000,
+      dueDate: new Date("2026-10-01"),
+      status: "PARTIAL",
+    },
+  });
+  await prisma.payment.create({
+    data: {
+      tenantId: tenant.id,
+      invoiceId: invEdu.id,
+      amount: 10000,
+      method: "TRANSFER",
+      note: "Eylül peşinat",
+      recordedById: createdUsers["sekreter@cankaya.local"],
+    },
+  });
+  const invFood = await prisma.invoice.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      studentId: s12A[0].id,
+      feeTypeId: feeFood.id,
+      title: "Eylül yemek",
+      amount: 3000,
+      dueDate: new Date("2026-09-10"),
+      status: "PAID",
+    },
+  });
+  await prisma.payment.create({
+    data: {
+      tenantId: tenant.id,
+      invoiceId: invFood.id,
+      amount: 3000,
+      method: "CASH",
+      recordedById: createdUsers["sekreter@cankaya.local"],
+    },
+  });
+  await prisma.invoice.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      studentId: s12A[0].id,
+      feeTypeId: feeBus.id,
+      title: "Eylül servis",
+      amount: 4500,
+      dueDate: new Date("2026-09-10"),
+      status: "OPEN",
+    },
+  });
+
+  await prisma.teacherNote.create({
+    data: {
+      tenantId: tenant.id,
+      teacherId: teacherA,
+      studentId: s12A[0].id,
+      body: "Mehmet türev konusunda hızlandı. Aileye olumlu dönüş yapılabilir. (özel not — diğer öğretmen görmez)",
+    },
+  });
+  await prisma.teacherNote.create({
+    data: {
+      tenantId: tenant.id,
+      teacherId: teacherB,
+      studentId: s12A[1].id,
+      body: "Elif sözlü derste çekingen. Yalnızca Türkçe öğretmeni notu.",
+    },
+  });
+
+  const card = await prisma.reportCard.create({
+    data: {
+      tenantId: tenant.id,
+      termId: term1.id,
+      studentId: s12A[0].id,
+      published: true,
+      comment: "Genel gidişat olumlu.",
+    },
+  });
+  await prisma.reportCardLine.createMany({
+    data: [
+      { reportCardId: card.id, courseId: mat.id, average: 88.67, letter: "BA", fivePoint: 5 },
+      { reportCardId: card.id, courseId: tur.id, average: 82, letter: "BB", fivePoint: 4 },
+    ],
   });
 
   console.log("Seed tamam. Demo parola:", PASSWORD);

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell";
 import { formatTrDateTime } from "@/lib/time";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export default async function ParentHome({ searchParams }: { searchParams: Promise<{ child?: string }> }) {
   const actor = await requireActor();
@@ -38,6 +39,20 @@ export default async function ParentHome({ searchParams }: { searchParams: Promi
         </select>
         <button className="btn btn-ghost ml-2">Seç</button>
       </form>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <Link className="btn btn-ghost" href={`/veli/notlar?child=${student.id}`}>
+          Notlar
+        </Link>
+        <Link className="btn btn-ghost" href={`/veli/odevler?child=${student.id}`}>
+          Ödevler
+        </Link>
+        <Link className="btn btn-ghost" href={`/veli/odemeler?child=${student.id}`}>
+          Ödemeler
+        </Link>
+        <Link className="btn btn-ghost" href={`/veli/karne?child=${student.id}`}>
+          Karne
+        </Link>
+      </div>
       <div className="grid lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-3">
           {events.map((e) => (

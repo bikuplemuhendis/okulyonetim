@@ -1,6 +1,7 @@
 import { requireActor } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell";
+import Link from "next/link";
 import { SelfCheckInButton } from "@/components/checkin";
 import { formatTrDateTime } from "@/lib/time";
 import { redirect } from "next/navigation";
@@ -22,6 +23,26 @@ export default async function StudentHome() {
       <PageHeader title={`Merhaba ${student.name}`} subtitle={`${student.classroom.name} · web yoklama ile derse katılın.`} />
       <div className="card p-5 mb-6">
         <SelfCheckInButton />
+      </div>
+      <div className="flex flex-wrap gap-2 mb-6">
+        <Link className="btn btn-ghost" href="/ogrenci/program">
+          Program
+        </Link>
+        <Link className="btn btn-ghost" href="/ogrenci/notlar">
+          Notlar
+        </Link>
+        <Link className="btn btn-ghost" href="/ogrenci/odevler">
+          Ödevler
+        </Link>
+        <Link className="btn btn-ghost" href="/ogrenci/materyaller">
+          Materyaller
+        </Link>
+        <Link className="btn btn-ghost" href="/ogrenci/odemeler">
+          Ödeme
+        </Link>
+        <Link className="btn btn-ghost" href="/ogrenci/karne">
+          Karne
+        </Link>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         <div className="card p-5">

@@ -572,11 +572,24 @@ export async function upsertSchedule(
     throw new Error("Öğretmen olarak yalnızca öğretmen veya şube müdürü seçilebilir.");
   }
 
-  const clashes = await prisma.lessonSchedule.findMany({
-    where: { locationId: location.id, dayOfWeek, id: input.id ? { not: input.id } : undefined },
+  const clashWhere = { dayOfWeek, id: input.id ? { not: input.id } : undefined };
+  const locationClashes = await prisma.lessonSchedule.findMany({
+    where: { ...clashWhere, locationId: location.id },
   });
-  if (clashes.some((c) => overlaps(c.startTime, c.endTime, input.startTime, input.endTime))) {
+  if (locationClashes.some((c) => overlaps(c.startTime, c.endTime, input.startTime, input.endTime))) {
     throw new Error("Aynı lokasyonda saat çakışması var.");
+  }
+  const teacherClashes = await prisma.lessonSchedule.findMany({
+    where: { ...clashWhere, teacherId: teacher.id },
+  });
+  if (teacherClashes.some((c) => overlaps(c.startTime, c.endTime, input.startTime, input.endTime))) {
+    throw new Error("Öğretmenin aynı saatte başka dersi var.");
+  }
+  const classClashes = await prisma.lessonSchedule.findMany({
+    where: { ...clashWhere, classroomId: classroom.id },
+  });
+  if (classClashes.some((c) => overlaps(c.startTime, c.endTime, input.startTime, input.endTime))) {
+    throw new Error("Sınıfın aynı saatte başka dersi var.");
   }
 
   const data = {

@@ -7,6 +7,7 @@ import { DAY_LABELS } from "@/lib/time";
 import { scopedBranches } from "@/lib/services";
 import { Flash, NeedTenant } from "@/components/flash";
 import { ConfirmDelete } from "@/components/org-ui";
+import { WeeklyGrid } from "@/components/sis-ui";
 import Link from "next/link";
 
 export default async function SchedulePage({
@@ -43,6 +44,18 @@ export default async function SchedulePage({
         subtitle="Gün, saat, ders, öğretmen, sınıf, lokasyon. Aynı lokasyonda çakışma kontrolü kayıtta uygulanır."
       />
       <Flash ok={sp.ok} err={sp.err} />
+      <WeeklyGrid
+        rows={rows.map((r) => ({
+          id: r.id,
+          dayOfWeek: r.dayOfWeek,
+          startTime: r.startTime,
+          endTime: r.endTime,
+          course: r.course.name,
+          classroom: r.classroom.name,
+          teacher: r.teacher.name,
+          location: r.location.name,
+        }))}
+      />
       {actor.role !== "TEACHER" ? (
         <form action={saveSchedule} className="card p-5 mb-6 grid md:grid-cols-4 gap-3">
           {editing ? <input type="hidden" name="id" value={editing.id} /> : null}

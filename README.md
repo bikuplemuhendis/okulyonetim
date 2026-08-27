@@ -4,6 +4,8 @@ RFID’siz **Akıllı Kampüs Yönetim ve Verimlilik** web uygulaması. Kaynak s
 
 Ürün planı: [`docs/PLAN.md`](docs/PLAN.md)
 
+Kampüs operasyonu (yoklama, kiosk, rehberlik) duruyor; üzerine **okul bilgi sistemi (SIS)** eklendi: dönem, takvim, not, sınav, ödev, materyal, karne, ücret/tahsilat, veli/öğrenci portalları.
+
 ## Çalıştırma
 
 ```bash
@@ -29,11 +31,15 @@ Tüm demo hesapların parolası: **`Demo123!`**
 | Veli (Mehmet Kaya) | `veli@cankaya.local` |
 | Öğrenci (Mehmet Kaya) | `ogrenci@cankaya.local` |
 
+SIS denemesi: öğretmen `ogretmen@cankaya.local` ile `/panel/sinavlar`, `/panel/notlar`, `/panel/odevler`, `/panel/materyaller`; veli `veli@cankaya.local` ile `/veli/notlar`, `/veli/odemeler`, `/veli/karne`; sekreterlik `sekreter@cankaya.local` ile `/panel/ucretler`.
+
 ## Stack
 
 - Next.js 16 App Router, TypeScript, Tailwind CSS 4
 - Prisma + SQLite (üretimde PostgreSQL önerilir)
 - JWT çerezi, rol + şube kapsamı, tenant izolasyonu
+- Materyal/ödev dosyaları `uploads/` altında (indirme: `/api/files/[id]`)
+- Ücret: fatura + tahsilat kaydı (banka yok)
 
 ## RFID yerine ne var?
 

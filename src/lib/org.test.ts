@@ -183,6 +183,30 @@ describe("okul yapısı izolasyonu", () => {
       }),
     ).rejects.toThrow(/çakışma/);
 
+    const loc2 = await upsertLocation(ownerA, {
+      branchId: branchA.id,
+      name: `Kapı2 ${suffix}`,
+      type: "CLASSROOM",
+    });
+    const classroom2 = await upsertClassroom(ownerA, {
+      branchId: branchA.id,
+      gradeLevel: "10",
+      section: "D",
+      locationId: loc2.id,
+    });
+    await expect(
+      upsertSchedule(ownerA, {
+        branchId: branchA.id,
+        classroomId: classroom2.id,
+        courseId: course.id,
+        teacherId: teacher.id,
+        locationId: loc2.id,
+        dayOfWeek: 1,
+        startTime: "09:00",
+        endTime: "09:40",
+      }),
+    ).rejects.toThrow(/öğretmen/);
+
     const student = await upsertStudent(ownerA, {
       branchId: branchA.id,
       classroomId: classroom.id,

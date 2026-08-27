@@ -67,6 +67,28 @@ export function requireTenantId(actor: Actor): string {
   return actor.tenantId;
 }
 
+export function canEnterGrades(role: Role) {
+  return ["PLATFORM_SUPER_ADMIN", "TENANT_OWNER", "TENANT_OPS", "BRANCH_MANAGER", "TEACHER"].includes(role);
+}
+
+export function canViewStaffGrades(role: Role) {
+  return canEnterGrades(role) || role === "COUNSELOR" || role === "BRANCH_OPS";
+}
+
+export function canManageFinance(role: Role) {
+  return ["PLATFORM_SUPER_ADMIN", "TENANT_OWNER", "TENANT_OPS", "BRANCH_MANAGER", "BRANCH_OPS"].includes(
+    role,
+  );
+}
+
+export function canManageCalendar(role: Role) {
+  return canManageFinance(role);
+}
+
+export function canManageTerms(role: Role) {
+  return canManageAcademic(role);
+}
+
 export function canStartSession(role: Role) {
   return ["TEACHER", "BRANCH_MANAGER", "TENANT_OWNER", "PLATFORM_SUPER_ADMIN"].includes(role);
 }

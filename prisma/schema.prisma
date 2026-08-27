@@ -128,6 +128,67 @@ enum Relationship {
   DIGER
 }
 
+enum TermStatus {
+  PLANNED
+  ACTIVE
+  CLOSED
+}
+
+enum CalendarEventType {
+  HOLIDAY
+  EXAM
+  MEETING
+  TERM
+  OTHER
+}
+
+enum ExamType {
+  WRITTEN
+  ORAL
+  PRACTICAL
+}
+
+enum AssignmentStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum SubmissionStatus {
+  PENDING
+  SUBMITTED
+  GRADED
+  LATE
+}
+
+enum MaterialVisibility {
+  PRIVATE
+  CLASS
+  COURSE
+  BRANCH
+}
+
+enum FeePeriod {
+  MONTHLY
+  TERM
+  YEAR
+  ONE_OFF
+}
+
+enum InvoiceStatus {
+  OPEN
+  PARTIAL
+  PAID
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CARD
+  OTHER
+}
+
 model Tenant {
   id                           String       @id @default(cuid())
   name                         String
@@ -160,6 +221,18 @@ model Tenant {
   counseling                   CounselingRecord[]
   excuses                      ExcuseRequest[]
   checkIns                     CheckInEvent[]
+  academicTerms                AcademicTerm[]
+  calendarEvents               CalendarEvent[]
+  exams                        Exam[]
+  examScores                   ExamScore[]
+  assignments                  Assignment[]
+  submissions                  AssignmentSubmission[]
+  materials                    Material[]
+  feeTypes                     FeeType[]
+  invoices                     Invoice[]
+  payments                     Payment[]
+  teacherNotes                 TeacherNote[]
+  reportCards                  ReportCard[]
 }
 
 model Branch {
@@ -183,6 +256,11 @@ model Branch {
   announcements Announcement[]
   incidents   Incident[]
   buildings   Building[]
+  exams       Exam[]
+  assignments Assignment[]
+  materials   Material[]
+  calendarEvents CalendarEvent[]
+  invoices    Invoice[]
   @@unique([tenantId, code])
 }
 
@@ -241,6 +319,13 @@ model User {
   announcements Announcement[]
   marked        Attendance[]      @relation("AttendanceMarker")
   advised       Classroom[]       @relation("ClassroomAdvisor")
+  examsCreated  Exam[]            @relation("ExamCreator")
+  examsTaught   Exam[]            @relation("ExamTeacher")
+  assignments   Assignment[]
+  materials     Material[]
+  teacherNotes  TeacherNote[]
+  payments      Payment[]         @relation("PaymentRecorder")
+  calendarEvents CalendarEvent[]
 }
 
 model UserBranchScope {
@@ -268,6 +353,9 @@ model Classroom {
   status      String           @default("ACTIVE")
   students    Student[]
   schedules   LessonSchedule[]
+  exams       Exam[]
+  assignments Assignment[]
+  materials   Material[]
   @@unique([branchId, name])
 }
 
@@ -281,6 +369,10 @@ model Course {
   durationMinutes   Int
   attendanceType    AttendanceType @default(LESSON)
   schedules         LessonSchedule[]
+  exams             Exam[]
+  assignments       Assignment[]
+  materials         Material[]
+  reportCardLines   ReportCardLine[]
   @@unique([tenantId, code])
 }
 
@@ -305,6 +397,11 @@ model Student {
   excuses      ExcuseRequest[]
   prefs        NotificationPreference[]
   notifications NotificationRecord[]
+  examScores   ExamScore[]
+  submissions  AssignmentSubmission[]
+  invoices     Invoice[]
+  teacherNotes TeacherNote[]
+  reportCards  ReportCard[]
   @@unique([branchId, studentNo])
 }
 
@@ -336,6 +433,8 @@ model LessonSchedule {
   dayOfWeek    Int
   startTime    String
   endTime      String
+  termId       String?
+  term         AcademicTerm?  @relation(fields: [termId], references: [id])
   sessions     LessonSession[]
 }
 
@@ -516,4 +615,234 @@ model AuditLog {
   userAgent  String?
   result     String   @default("SUCCESS")
   createdAt  DateTime @default(now())
+}
+
+model AcademicTerm {
+  id          String             @id @default(cuid())
+  tenantId    String
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  startDate   DateTime
+  endDate     DateTime
+  isCurrent   Boolean            @default(false)
+  status      TermStatus         @default(PLANNED)
+  exams       Exam[]
+  assignments Assignment[]
+  reportCards ReportCard[]
+  events      CalendarEvent[]
+  schedules   LessonSchedule[]
+  @@unique([tenantId, name])
+}
+
+model CalendarEvent {
+  id          String             @id @default(cuid())
+  tenantId    String
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId    String?
+  branch      Branch?            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  termId      String?
+  term        AcademicTerm?      @relation(fields: [termId], references: [id])
+  authorId    String
+  author      User               @relation(fields: [authorId], references: [id])
+  title       String
+  body        String
+  startsAt    DateTime
+  endsAt      DateTime
+  allDay      Boolean            @default(true)
+  type        CalendarEventType  @default(OTHER)
+  audience    String             @default("[\"PARENT\",\"STUDENT\",\"TEACHER\"]")
+  createdAt   DateTime           @default(now())
+}
+
+model Exam {
+  id          String     @id @default(cuid())
+  tenantId    String
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  termId      String
+  term        AcademicTerm @relation(fields: [termId], references: [id], onDelete: Cascade)
+  branchId    String
+  branch      Branch     @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  classroomId String?
+  classroom   Classroom? @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  teacherId   String
+  teacher     User       @relation("ExamTeacher", fields: [teacherId], references: [id])
+  createdById String
+  createdBy   User       @relation("ExamCreator", fields: [createdById], references: [id])
+  name        String
+  examDate    DateTime
+  examType    ExamType   @default(WRITTEN)
+  maxScore    Float      @default(100)
+  weight      Float      @default(1)
+  published   Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  scores      ExamScore[]
+}
+
+model ExamScore {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  examId     String
+  exam       Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  score      Float
+  note       String?
+  updatedAt  DateTime @updatedAt
+  @@unique([examId, studentId])
+}
+
+model Assignment {
+  id          String           @id @default(cuid())
+  tenantId    String
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  termId      String?
+  term        AcademicTerm?    @relation(fields: [termId], references: [id])
+  branchId    String
+  branch      Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  classroomId String
+  classroom   Classroom        @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  teacherId   String
+  teacher     User             @relation(fields: [teacherId], references: [id])
+  title       String
+  body        String
+  dueAt       DateTime
+  maxScore    Float            @default(100)
+  weight      Float            @default(1)
+  published   Boolean          @default(true)
+  status      AssignmentStatus @default(PUBLISHED)
+  createdAt   DateTime         @default(now())
+  submissions AssignmentSubmission[]
+}
+
+model AssignmentSubmission {
+  id           String           @id @default(cuid())
+  tenantId     String
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignmentId String
+  assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  body         String?
+  fileName     String?
+  storedName   String?
+  mimeType     String?
+  submittedAt  DateTime?
+  score        Float?
+  feedback     String?
+  status       SubmissionStatus @default(PENDING)
+  @@unique([assignmentId, studentId])
+}
+
+model Material {
+  id          String              @id @default(cuid())
+  tenantId    String
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teacherId   String
+  teacher     User                @relation(fields: [teacherId], references: [id])
+  branchId    String?
+  branch      Branch?             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  courseId    String?
+  course      Course?             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  classroomId String?
+  classroom   Classroom?          @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  fileName    String
+  storedName  String
+  mimeType    String
+  sizeBytes   Int
+  visibility  MaterialVisibility  @default(CLASS)
+  createdAt   DateTime            @default(now())
+}
+
+model FeeType {
+  id          String    @id @default(cuid())
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  amount      Float
+  period      FeePeriod @default(TERM)
+  description String?
+  status      String    @default("ACTIVE")
+  invoices    Invoice[]
+  @@unique([tenantId, name])
+}
+
+model Invoice {
+  id         String        @id @default(cuid())
+  tenantId   String
+  tenant     Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId   String
+  branch     Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  studentId  String
+  student    Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  feeTypeId  String?
+  feeType    FeeType?      @relation(fields: [feeTypeId], references: [id])
+  title      String
+  amount     Float
+  dueDate    DateTime
+  status     InvoiceStatus @default(OPEN)
+  note       String?
+  createdAt  DateTime      @default(now())
+  payments   Payment[]
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  tenantId     String
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoiceId    String
+  invoice      Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount       Float
+  paidAt       DateTime      @default(now())
+  method       PaymentMethod @default(CASH)
+  note         String?
+  recordedById String
+  recordedBy   User          @relation("PaymentRecorder", fields: [recordedById], references: [id])
+}
+
+model TeacherNote {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teacherId  String
+  teacher    User     @relation(fields: [teacherId], references: [id])
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  body       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model ReportCard {
+  id          String           @id @default(cuid())
+  tenantId    String
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  termId      String
+  term        AcademicTerm     @relation(fields: [termId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  published   Boolean          @default(false)
+  generatedAt DateTime         @default(now())
+  comment     String?
+  lines       ReportCardLine[]
+  @@unique([termId, studentId])
+}
+
+model ReportCardLine {
+  id           String     @id @default(cuid())
+  reportCardId String
+  reportCard   ReportCard @relation(fields: [reportCardId], references: [id], onDelete: Cascade)
+  courseId     String
+  course       Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  average      Float
+  letter       String
+  fivePoint    Int
+  comment      String?
+  @@unique([reportCardId, courseId])
 }
