@@ -314,7 +314,7 @@ async function main() {
     student: "ogrenci@cankaya.local",
     parent: "veli@cankaya.local",
   });
-  const s12B = await makeStudents(names12B, c12B.id, cankaya.id, "202613");
+  await makeStudents(names12B, c12B.id, cankaya.id, "202613");
   await makeStudents(names9A, c9A.id, kadikoy.id, "202609");
 
   const teacherA = createdUsers["ogretmen@cankaya.local"];

@@ -12,7 +12,7 @@ const colors: Record<string, string> = {
 };
 
 export default async function ClassbookPage({ params }: { params: Promise<{ sessionId: string }> }) {
-  const actor = await requireActor();
+  await requireActor();
   const { sessionId } = await params;
   const session = await prisma.lessonSession.findUnique({
     where: { id: sessionId },
