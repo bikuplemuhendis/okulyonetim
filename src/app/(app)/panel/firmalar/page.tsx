@@ -1,7 +1,7 @@
 import { requireActor } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell";
-import { Flash, NeedTenant, dateInputValue } from "@/components/flash";
+import { Flash, dateInputValue } from "@/components/flash";
 import { saveTenant, saveTenantStatus } from "@/app/actions";
 
 export default async function TenantsPage({

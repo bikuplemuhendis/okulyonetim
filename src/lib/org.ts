@@ -423,13 +423,13 @@ export async function upsertClassroom(
   const section = input.section?.trim() || null;
   const name = requireText(input.name?.trim() || composeClassroomName(gradeLevel, section), "Sınıf adı", 1, 40);
   const band = input.band?.trim() || inferGradeBand(gradeLevel);
-  let advisorId = input.advisorId || null;
+  const advisorId = input.advisorId || null;
   if (advisorId) {
     const advisor = await prisma.user.findUnique({ where: { id: advisorId } });
     if (!advisor) throw new Error("Danışman bulunamadı.");
     assertTenant(actor, advisor.tenantId);
   }
-  let locationId = input.locationId || null;
+  const locationId = input.locationId || null;
   if (locationId) {
     const loc = await prisma.location.findUnique({ where: { id: locationId } });
     if (!loc) throw new Error("Lokasyon bulunamadı.");
