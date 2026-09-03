@@ -26,18 +26,19 @@ export function AppShell({
   const groups = [...new Set(nav.map((n) => n.group))];
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
+    <div className="min-h-screen lg:grid lg:grid-cols-[272px_1fr]">
       <aside
-        className={`${open ? "block" : "hidden"} lg:block fixed lg:static z-30 inset-y-0 left-0 w-[260px] bg-[var(--kampus-950)] text-white overflow-y-auto`}
+        className={`${open ? "block" : "hidden"} lg:block fixed lg:static z-30 inset-y-0 left-0 w-[272px] bg-[var(--kampus-950)] text-white overflow-y-auto`}
       >
-        <div className="px-5 py-5 border-b border-white/10">
-          <div className="text-xs uppercase tracking-[0.2em] text-teal-200/80">Akıllı Kampüs</div>
-          <div className="text-lg font-semibold mt-1">KampüsTakip</div>
+        <div className="px-5 py-6 border-b border-white/10">
+          <div className="text-[11px] uppercase tracking-[0.22em] text-cyan-200/70">Kampüs OS</div>
+          <div className="text-lg font-semibold mt-1 tracking-tight">KampüsTakip</div>
+          <p className="text-[11px] text-white/45 mt-1">K12NET’ten daha tam, daha sade</p>
         </div>
         <nav className="px-3 py-4 space-y-4">
           {groups.map((g) => (
             <div key={g}>
-              <div className="px-2 pb-1 text-[11px] uppercase tracking-wider text-white/40">{g}</div>
+              <div className="px-2 pb-1 text-[11px] uppercase tracking-wider text-white/35">{g}</div>
               <div className="space-y-0.5">
                 {nav
                   .filter((n) => n.group === g)
@@ -48,7 +49,7 @@ export function AppShell({
                         key={item.href}
                         href={item.href}
                         onClick={() => setOpen(false)}
-                        className={`block rounded-lg px-3 py-2 text-sm ${active ? "bg-white/15 text-white" : "text-white/75 hover:bg-white/10"}`}
+                        className={`block rounded-xl px-3 py-2 text-sm ${active ? "bg-white/15 text-white" : "text-white/70 hover:bg-white/10"}`}
                       >
                         {item.label}
                       </Link>
@@ -60,7 +61,7 @@ export function AppShell({
         </nav>
       </aside>
       <div className="min-w-0">
-        <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-200 px-4 py-3 flex items-center justify-between gap-3">
+        <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 flex items-center justify-between gap-3">
           <button className="lg:hidden btn btn-ghost" onClick={() => setOpen((v) => !v)} type="button">
             Menü
           </button>
@@ -95,7 +96,7 @@ export function PageHeader({
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {subtitle ? <p className="text-slate-600 mt-1 text-sm">{subtitle}</p> : null}
+        {subtitle ? <p className="text-slate-600 mt-1 text-sm max-w-2xl">{subtitle}</p> : null}
       </div>
       {actions}
     </div>

@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --kampus-950: #06222c;
-  --kampus-900: #0b3a4a;
-  --kampus-700: #0f4c5c;
-  --kampus-500: #1a7f92;
-  --kampus-100: #e7f4f7;
-  --accent: #e36414;
-  --bg: #f3f6f7;
-  --ink: #142026;
+  --kampus-950: #07151c;
+  --kampus-900: #0c2a36;
+  --kampus-700: #155e75;
+  --kampus-500: #22a3b8;
+  --kampus-100: #e6f6f8;
+  --accent: #f97316;
+  --bg: #f4f7f8;
+  --ink: #0f1c22;
 }
 
 @theme inline {
@@ -24,7 +24,10 @@
 
 html,
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(1200px 500px at 10% -10%, #d7eef2 0%, transparent 50%),
+    radial-gradient(900px 400px at 100% 0%, #ffe8d4 0%, transparent 42%),
+    var(--bg);
   color: var(--ink);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
@@ -33,16 +36,16 @@ body {
 .select,
 .textarea {
   width: 100%;
-  border: 1px solid #d5dee3;
-  border-radius: 0.7rem;
-  padding: 0.55rem 0.75rem;
+  border: 1px solid #d3dee3;
+  border-radius: 0.85rem;
+  padding: 0.58rem 0.8rem;
   background: white;
   font-size: 0.9rem;
 }
 .input:focus,
 .select:focus,
 .textarea:focus {
-  outline: 2px solid #1a7f92;
+  outline: 2px solid #22a3b8;
   outline-offset: 1px;
 }
 .btn {
@@ -50,7 +53,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  border-radius: 0.75rem;
+  border-radius: 0.85rem;
   padding: 0.55rem 0.95rem;
   font-size: 0.875rem;
   font-weight: 600;
@@ -58,11 +61,11 @@ body {
   cursor: pointer;
 }
 .btn-primary {
-  background: var(--kampus-700);
+  background: linear-gradient(180deg, #1a7f92, #155e75);
   color: white;
 }
 .btn-primary:hover {
-  background: var(--kampus-900);
+  background: #0c2a36;
 }
 .btn-accent {
   background: var(--accent);
@@ -74,10 +77,10 @@ body {
   color: var(--ink);
 }
 .card {
-  background: white;
-  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 1.15rem;
   border: 1px solid #e4ecef;
-  box-shadow: 0 1px 2px rgb(15 35 45 / 0.04);
+  box-shadow: 0 10px 30px rgb(15 35 45 / 0.04);
 }
 .table {
   width: 100%;

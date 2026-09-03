@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KampüsTakip — Akıllı Kampüs Yönetimi",
-  description: "Öğrenci, yoklama, veli ve şube operasyon yönetimi (RFID’siz web sistemi)",
+  title: "KampüsTakip — Modern okul işletim sistemi",
+  description: "K12NET’i geçen akademik, finans ve kampüs operasyonu — RFID’siz web SIS",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

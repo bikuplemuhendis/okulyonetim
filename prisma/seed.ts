@@ -7,6 +7,34 @@ const PASSWORD = "Demo123!";
 
 async function wipe() {
   const models = [
+    "surveyResponse",
+    "homeworkSubmission",
+    "gradeEntry",
+    "clubMembership",
+    "busAssignment",
+    "libraryLoan",
+    "homework",
+    "assessment",
+    "calendarEvent",
+    "inboxMessage",
+    "behaviorRecord",
+    "healthVisit",
+    "busRoute",
+    "libraryTitle",
+    "feeCharge",
+    "club",
+    "tutoringSlot",
+    "admissionLead",
+    "survey",
+    "staffAbsence",
+    "dutyShift",
+    "sharedDocument",
+    "visitorLog",
+    "mealMenu",
+    "achievement",
+    "parentMeeting",
+    "lessonTopic",
+    "inventoryItem",
     "notificationRecord",
     "notificationPreference",
     "notificationTemplate",
@@ -661,6 +689,253 @@ async function main() {
       ip: "127.0.0.1",
       userAgent: "seed",
     },
+  });
+
+  const mathAssess = await prisma.assessment.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      courseId: mat.id,
+      title: "1. yazılı",
+      kind: "EXAM",
+      examDate: now.dateStr,
+      maxScore: 100,
+      weight: 2,
+    },
+  });
+  const courseId = mathAssess.courseId;
+  await prisma.gradeEntry.createMany({
+    data: s12A.slice(0, 6).map((s, i) => ({
+      tenantId: tenant.id,
+      assessmentId: mathAssess.id,
+      studentId: s.id,
+      classroomId: c12A.id,
+      score: 72 + i * 4,
+      comment: i === 0 ? "Problem çözme güçlü" : undefined,
+    })),
+  });
+  const hw = await prisma.homework.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      courseId,
+      classroomId: c12A.id,
+      teacherId: createdUsers["ogretmen@cankaya.local"],
+      title: "Türev problem seti",
+      instructions: "Kitap s. 42, 1-8. Çözümleri PDF veya metin olarak yükleyin.",
+      dueDate: now.dateStr,
+      kind: "TEXT",
+    },
+  });
+  await prisma.homeworkSubmission.createMany({
+    data: s12A.map((s, i) => ({
+      homeworkId: hw.id,
+      studentId: s.id,
+      status: i === 0 ? "SUBMITTED" : "ASSIGNED",
+      answer: i === 0 ? "1-8 tamam, fotoğraf yok" : undefined,
+      submittedAt: i === 0 ? new Date() : undefined,
+    })),
+  });
+  await prisma.calendarEvent.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      title: "Veli toplantısı",
+      body: "12. sınıflar için dönem başı veli toplantısı, konferans salonu.",
+      startsOn: now.dateStr,
+      endsOn: now.dateStr,
+    },
+  });
+  await prisma.inboxMessage.create({
+    data: {
+      tenantId: tenant.id,
+      senderId: createdUsers["ogretmen@cankaya.local"],
+      recipientRole: "PARENT",
+      studentId: s12A[0].id,
+      subject: "Matematik etüt önerisi",
+      body: "Mehmet için haftada iki etüt planladık. Onayınızı bekliyoruz.",
+    },
+  });
+  await prisma.behaviorRecord.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      studentId: s12A[0].id,
+      authorId: createdUsers["ogretmen@cankaya.local"],
+      kind: "POSITIVE",
+      title: "Derse katkı",
+      note: "Zor soruyu tahtada çözdü.",
+      points: 2,
+    },
+  });
+  await prisma.healthVisit.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      studentId: s12A[1].id,
+      staffId: createdUsers["sekreter@cankaya.local"],
+      complaint: "Baş ağrısı",
+      treatment: "Dinlenme + su",
+      heightCm: 171,
+      weightKg: 62,
+    },
+  });
+  const route = await prisma.busRoute.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      name: "Çankaya hat 1",
+      vehicle: "Mercedes Sprinter",
+      driver: "Hasan Şoför",
+      plate: "06 KT 441",
+      morningEta: "07:35",
+    },
+  });
+  await prisma.busAssignment.create({
+    data: { routeId: route.id, studentId: s12A[0].id, stopName: "Kızılay durağı" },
+  });
+  const book = await prisma.libraryTitle.create({
+    data: { tenantId: tenant.id, title: "Sefiller", author: "Victor Hugo", copies: 3 },
+  });
+  await prisma.libraryLoan.create({
+    data: { titleId: book.id, studentId: s12A[0].id, dueDate: now.dateStr, status: "OUT" },
+  });
+  await prisma.feeCharge.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      studentId: s12A[0].id,
+      title: "2026-2027 kayıt taksiti 1",
+      amount: 25000,
+      paid: 8000,
+      dueDate: now.dateStr,
+      status: "PARTIAL",
+    },
+  });
+  const club = await prisma.club.create({
+    data: { tenantId: tenant.id, branchId: cankaya.id, name: "Satranç", capacity: 16 },
+  });
+  await prisma.clubMembership.create({ data: { clubId: club.id, studentId: s12A[0].id, preference: 1, placed: true } });
+  await prisma.tutoringSlot.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      courseId,
+      teacherId: createdUsers["ogretmen@cankaya.local"],
+      studentId: s12A[0].id,
+      date: now.dateStr,
+      startTime: "16:00",
+      endTime: "16:40",
+      topic: "Türev",
+      status: "BOOKED",
+    },
+  });
+  await prisma.admissionLead.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      ownerId: createdUsers["sekreter@cankaya.local"],
+      studentName: "Ada Aday",
+      parentName: "Selin Aday",
+      phone: "+905559990011",
+      gradeLevel: "9",
+      note: "Tanıtım turu yapıldı, ücret konuşulacak.",
+      offeredFee: 180000,
+      status: "MEETING",
+    },
+  });
+  const survey = await prisma.survey.create({
+    data: {
+      tenantId: tenant.id,
+      title: "Yemekhane memnuniyeti",
+      question: "Bu haftanın menüsünü 1-5 puanlayın.",
+      audience: "PARENT",
+    },
+  });
+  await prisma.surveyResponse.create({
+    data: { surveyId: survey.id, authorName: "Kaya Veli", score: 4, comment: "Çorba iyiydi" },
+  });
+  await prisma.staffAbsence.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      userId: createdUsers["ogretmen2@cankaya.local"],
+      date: now.dateStr,
+      kind: "LEAVE",
+      note: "Yarım gün izin",
+    },
+  });
+  await prisma.dutyShift.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      userId: createdUsers["ogretmen@cankaya.local"],
+      date: now.dateStr,
+      slot: "Öğle teneffüsü",
+      place: "Bahçe",
+    },
+  });
+  await prisma.sharedDocument.create({
+    data: {
+      tenantId: tenant.id,
+      authorId: createdUsers["mudur@cankaya.local"],
+      title: "Ara dönem bilgi notu",
+      kind: "GENELGE",
+      audience: '["PARENT"]',
+      body: "Veli toplantısı salı 18:00. Not çizelgeleri portalda.",
+    },
+  });
+  await prisma.visitorLog.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      hostId: createdUsers["sekreter@cankaya.local"],
+      visitorName: "Yayınevi temsilcisi",
+      purpose: "Kitap teslimi",
+    },
+  });
+  await prisma.mealMenu.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      date: now.dateStr,
+      meal: "Öğle",
+      items: "Mercimek, ızgara köfte, salata, ayran, meyve",
+    },
+  });
+  await prisma.achievement.create({
+    data: {
+      tenantId: tenant.id,
+      studentId: s12A[0].id,
+      title: "Matematik olimpiyatı il birinciliği",
+      badge: "altın",
+      note: "2026 il elemeleri",
+    },
+  });
+  await prisma.parentMeeting.create({
+    data: {
+      tenantId: tenant.id,
+      branchId: cankaya.id,
+      teacherId: createdUsers["ogretmen@cankaya.local"],
+      studentId: s12A[0].id,
+      parentName: "Kaya Veli",
+      slot: `${now.dateStr} 16:30`,
+      mode: "YUZ_YUZE",
+      status: "CONFIRMED",
+    },
+  });
+  await prisma.lessonTopic.create({
+    data: {
+      tenantId: tenant.id,
+      courseId,
+      teacherId: createdUsers["ogretmen@cankaya.local"],
+      weekOf: now.dateStr,
+      title: "Türev uygulamaları",
+      outcomes: "Hız, ivme ve teğet problemlerini çözer.",
+    },
+  });
+  await prisma.inventoryItem.create({
+    data: { tenantId: tenant.id, name: "Projeksiyon", category: "Demirbaş", qty: 4, location: "Depo A", assignedTo: "12-A" },
   });
 
   console.log("Seed tamam. Demo parola:", PASSWORD);

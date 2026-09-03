@@ -79,8 +79,9 @@ Tarayıcı (TR UI)
 | Raporlar | `/panel/raporlar` |
 | Denetim izi | `/panel/denetim` |
 | Mazeretler | `/panel/mazeretler` |
-| Veli | `/veli`, `/veli/devamsizlik`, `/veli/bildirimler` |
-| Öğrenci | `/ogrenci` |
+| Veli | `/veli` (360°), `/veli/devamsizlik`, `/veli/notlar`, `/veli/odevler`, `/veli/takvim`, `/veli/mesajlar`, `/veli/odeme`, `/veli/servis`, `/veli/randevu`, `/veli/bildirimler` |
+| Öğrenci | `/ogrenci`, `/ogrenci/notlar`, `/ogrenci/odevler`, `/ogrenci/takvim` |
+| SIS (K12NET karşılığı) | `/panel/notlar`, `/odevler`, `/konular`, `/etut`, `/kulupler`, `/takvim`, `/mesajlar`, `/randevu`, `/belgeler`, `/anketler`, `/davranis`, `/saglik`, `/servis`, `/kutuphane`, `/yemekhane`, `/basarilar`, `/ziyaretci`, `/nobet`, `/personel-devam`, `/finans`, `/kayit`, `/stok` |
 | Kiosk | `/kiosk/[locationId]` |
 
 ## 5. Veri modeli (özet)

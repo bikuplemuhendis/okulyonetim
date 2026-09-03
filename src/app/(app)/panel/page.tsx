@@ -91,7 +91,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
-      <div className="grid lg:grid-cols-2 gap-4">
+      <div className="grid lg:grid-cols-3 gap-4">
         <div className="card p-5">
           <h2 className="font-semibold mb-3">Şubeler</h2>
           <ul className="space-y-2 text-sm">
@@ -104,6 +104,24 @@ export default async function DashboardPage() {
               </li>
             ))}
           </ul>
+        </div>
+        <div className="card p-5">
+          <h2 className="font-semibold mb-3">SIS süiti</h2>
+          <p className="text-sm text-slate-600 mb-3">K12NET 44 modülünün modern karşılığı — akademik, yaşam, finans, operasyon.</p>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            {[
+              ["/panel/notlar", "Not defteri"],
+              ["/panel/odevler", "Ödevler"],
+              ["/panel/finans", "Ücret"],
+              ["/panel/kayit", "Ön kayıt"],
+              ["/panel/mesajlar", "Mesaj"],
+              ["/panel/servis", "Servis"],
+            ].map(([href, label]) => (
+              <Link key={href} href={href} className="rounded-xl border border-slate-100 px-3 py-2 hover:bg-kampus-100">
+                {label}
+              </Link>
+            ))}
+          </div>
         </div>
         <div className="card p-5">
           <h2 className="font-semibold mb-3">Duyurular</h2>

@@ -1,6 +1,6 @@
 # KampüsTakip
 
-RFID’siz **Akıllı Kampüs Yönetim ve Verimlilik** web uygulaması. Kaynak spec: `akilli-kampus-takip` v1.0.2. Donanım / kart okuyucu / turnike cihazı **dahil değildir**; yoklama ve giriş-çıkış web akışlarıdır.
+RFID’siz **Akıllı Kampüs Yönetim ve Verimlilik** web uygulaması. Kaynak spec: `akilli-kampus-takip` v1.0.2. K12NET rekabet araştırması ve SIS süiti: [`docs/research/`](docs/research/). Donanım / kart okuyucu / turnike cihazı **dahil değildir**; yoklama ve giriş-çıkış web akışlarıdır.
 
 Ürün planı: [`docs/PLAN.md`](docs/PLAN.md)
 
