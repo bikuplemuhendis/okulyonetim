@@ -90,6 +90,7 @@ export async function saveTenantSettings(form: FormData) {
       kvkkMasking: fd(form, "kvkkMasking") as "NONE" | "PHONE" | "EMAIL" | "BOTH",
       notificationChannels: form.getAll("channels").map(String),
       timezone: fd(form, "timezone") || undefined,
+      vertical: (fd(form, "vertical") || "KAMPUS") as "KAMPUS" | "NIDO" | "KURS",
     }),
   );
   revalidatePath("/panel/ayarlar");
@@ -563,6 +564,7 @@ export async function saveTenant(form: FormData) {
       ownerName: fd(form, "ownerName") || undefined,
       ownerEmail: fd(form, "ownerEmail") || undefined,
       ownerPassword: fd(form, "ownerPassword") || undefined,
+      vertical: (fd(form, "vertical") || "KAMPUS") as "KAMPUS" | "NIDO" | "KURS",
     });
     await setActiveTenantCookie(tenant.id);
   } catch (e) {

@@ -30,6 +30,11 @@ export default async function TenantsPage({
         <input className="input" name="ownerName" placeholder="Sahip adı (ops.)" />
         <input className="input" name="ownerEmail" type="email" placeholder="Sahip e-posta (ops.)" />
         <input className="input" name="ownerPassword" type="password" placeholder="Sahip parola (boşsa Demo123!)" />
+        <select className="select" name="vertical" defaultValue="KAMPUS">
+          <option value="KAMPUS">Kampüs (K-12)</option>
+          <option value="NIDO">Nido (anaokulu / kreş)</option>
+          <option value="KURS">Kurs (dershane)</option>
+        </select>
         <button className="btn btn-primary">Tenant aç ve seç</button>
       </form>
       <NeedTenantNote />
@@ -38,6 +43,7 @@ export default async function TenantsPage({
           <thead>
             <tr>
               <th>Ad</th>
+              <th>Dikey</th>
               <th>Akademik yıl</th>
               <th>Şube</th>
               <th>Kullanıcı</th>
@@ -48,6 +54,7 @@ export default async function TenantsPage({
             {tenants.map((t) => (
               <tr key={t.id}>
                 <td>{t.name}</td>
+                <td>{t.vertical}</td>
                 <td>
                   {dateInputValue(t.academicYearStart)} → {dateInputValue(t.academicYearEnd)}
                 </td>

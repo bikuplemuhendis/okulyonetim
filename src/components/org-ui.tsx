@@ -6,7 +6,7 @@ export function TenantSwitcher({
   tenants,
   currentId,
 }: {
-  tenants: { id: string; name: string }[];
+  tenants: { id: string; name: string; vertical?: string }[];
   currentId: string | null;
 }) {
   return (
@@ -22,7 +22,7 @@ export function TenantSwitcher({
         <option value="">Tüm firmalar</option>
         {tenants.map((t) => (
           <option key={t.id} value={t.id}>
-            {t.name}
+            {t.vertical ? `${t.name} · ${t.vertical}` : t.name}
           </option>
         ))}
       </select>

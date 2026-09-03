@@ -11,6 +11,9 @@ const demos = [
   ["Rehberlik", "rehberlik@cankaya.local"],
   ["Veli", "veli@cankaya.local"],
   ["Öğrenci", "ogrenci@cankaya.local"],
+  ["Nido sahip", "sahip@nido.local"],
+  ["Nido veli", "veli@nido.local"],
+  ["Kurs sahip", "sahip@kurs.local"],
 ];
 
 export function LoginForm() {

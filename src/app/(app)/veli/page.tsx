@@ -48,6 +48,7 @@ export default async function ParentHome({ searchParams }: { searchParams: Promi
       </div>
       <div className="flex flex-wrap gap-2 mb-6">
         {[
+          ["/veli/gunluk", "Günlük"],
           ["/veli/notlar", "Notlar"],
           ["/veli/odevler", "Ödevler"],
           ["/veli/odeme", "Ödeme"],

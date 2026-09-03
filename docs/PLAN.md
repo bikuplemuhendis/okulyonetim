@@ -13,6 +13,7 @@ Bu belge web ürününün mimarisini, rollerini, modüllerini, veri modelini, sa
 - **Yetki:** Rol + kapsam (firma / şube). Tüm kayıtlar `tenantId` ile izole edilir.
 - **Bildirim:** SMS/Push gerçek sağlayıcı yerine **simüle edilen gönderim kaydı** (şablon, kanal, sessiz saat, rate-limit).
 - **Çok kiracılılık:** Platform → Firma (Tenant) → Şube → Lokasyon (web yoklama/giriş noktası).
+- **Dikey / lokalizasyon:** Tenant `vertical` = `KAMPUS` | `NIDO` | `KURS`. Nav ve kopya paketi değişir; Nido’da günlük rapor + teslim kişisi (NidoKit karşılığı).
 
 ```
 Tarayıcı (TR UI)

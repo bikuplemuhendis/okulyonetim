@@ -7,6 +7,8 @@ import type { Actor } from "@/lib/types";
 import type { NavItem } from "@/lib/nav";
 import { ROLE_LABELS } from "@/lib/types";
 import { logoutAction } from "@/app/actions";
+import type { LocalePack } from "@/lib/locale";
+import { localePack } from "@/lib/locale";
 
 import { TenantSwitcher } from "./org-ui";
 
@@ -14,13 +16,16 @@ export function AppShell({
   actor,
   nav,
   tenants,
+  locale,
   children,
 }: {
   actor: Actor;
   nav: NavItem[];
-  tenants?: { id: string; name: string }[];
+  tenants?: { id: string; name: string; vertical?: string }[];
+  locale?: LocalePack;
   children: React.ReactNode;
 }) {
+  const pack = locale ?? localePack("KAMPUS");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const groups = [...new Set(nav.map((n) => n.group))];
@@ -31,9 +36,9 @@ export function AppShell({
         className={`${open ? "block" : "hidden"} lg:block fixed lg:static z-30 inset-y-0 left-0 w-[272px] bg-[var(--kampus-950)] text-white overflow-y-auto`}
       >
         <div className="px-5 py-6 border-b border-white/10">
-          <div className="text-[11px] uppercase tracking-[0.22em] text-cyan-200/70">Kampüs OS</div>
-          <div className="text-lg font-semibold mt-1 tracking-tight">KampüsTakip</div>
-          <p className="text-[11px] text-white/45 mt-1">K12NET’ten daha tam, daha sade</p>
+          <div className="text-[11px] uppercase tracking-[0.22em] text-cyan-200/70">Eğitim OS</div>
+          <div className="text-lg font-semibold mt-1 tracking-tight">{pack.productName}</div>
+          <p className="text-[11px] text-white/45 mt-1">{pack.tagline}</p>
         </div>
         <nav className="px-3 py-4 space-y-4">
           {groups.map((g) => (

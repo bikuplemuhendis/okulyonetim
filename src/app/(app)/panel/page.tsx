@@ -3,12 +3,15 @@ import { dashboardMetrics } from "@/lib/services";
 import { PageHeader } from "@/components/shell";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { hiddenHrefs, localePack } from "@/lib/locale";
 
 export default async function DashboardPage() {
   const actor = await requireActor();
   if (actor.role === "PARENT") {
     /* layout still used for /panel; parents normally land on /veli */
   }
+  const tenant = actor.tenantId ? await prisma.tenant.findUnique({ where: { id: actor.tenantId } }) : null;
+  const pack = localePack(tenant?.vertical);
   const m = await dashboardMetrics(actor);
   const announcements = actor.tenantId
     ? await prisma.announcement.findMany({
@@ -24,11 +27,11 @@ export default async function DashboardPage() {
   return (
     <div>
       <PageHeader
-        title="Firma kokpiti"
-        subtitle="Şube karşılaştırması, katılım ısı haritası ve check-in noktası aktivitesi (RFID cihaz sağlığı yerine)."
+        title={pack.dashboardTitle}
+        subtitle={pack.dashboardSubtitle}
       />
       <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <Stat label="Aktif öğrenci" value={String(m.studentCount)} />
+        <Stat label={`Aktif ${pack.learners}`} value={String(m.studentCount)} />
         <Stat
           label="Ders saati doluluk (7g)"
           value={`%${m.occupancy}`}
@@ -77,19 +80,27 @@ export default async function DashboardPage() {
             </table>
           </div>
         </div>
-        <div className="card p-5">
-          <h2 className="font-semibold mb-2">Check-in noktası aktivitesi</h2>
-          <p className="text-sm text-slate-600 mb-3">
-            RFID heartbeat yerine son 30 dk web olayı olan lokasyonlar.
-          </p>
-          <div className="text-3xl font-semibold">
-            {m.locationHealth.active}/{m.locationHealth.total}
+        {hiddenHrefs(pack.vertical).includes("/panel/canli") ? (
+          <div className="card p-5">
+            <h2 className="font-semibold mb-2">Kayıt hunisi</h2>
+            <p className="text-sm text-slate-600 mb-3">Aday → görüşme → kayıt. Kampüs turnike katmanı bu dikeyde kapalı.</p>
+            <Link href="/panel/kayit" className="btn btn-primary mt-4 inline-flex">
+              Ön kayıt
+            </Link>
           </div>
-          <p className="text-sm text-slate-500 mt-1">{m.locationHealth.idle} nokta boş/idle</p>
-          <Link href="/panel/canli" className="btn btn-primary mt-4 inline-flex">
-            Canlı bina
-          </Link>
-        </div>
+        ) : (
+          <div className="card p-5">
+            <h2 className="font-semibold mb-2">Check-in noktası aktivitesi</h2>
+            <p className="text-sm text-slate-600 mb-3">RFID heartbeat yerine son 30 dk web olayı olan lokasyonlar.</p>
+            <div className="text-3xl font-semibold">
+              {m.locationHealth.active}/{m.locationHealth.total}
+            </div>
+            <p className="text-sm text-slate-500 mt-1">{m.locationHealth.idle} nokta boş/idle</p>
+            <Link href="/panel/canli" className="btn btn-primary mt-4 inline-flex">
+              Canlı bina
+            </Link>
+          </div>
+        )}
       </div>
       <div className="grid lg:grid-cols-3 gap-4">
         <div className="card p-5">
@@ -106,17 +117,21 @@ export default async function DashboardPage() {
           </ul>
         </div>
         <div className="card p-5">
-          <h2 className="font-semibold mb-3">SIS süiti</h2>
-          <p className="text-sm text-slate-600 mb-3">K12NET 44 modülünün modern karşılığı — akademik, yaşam, finans, operasyon.</p>
+          <h2 className="font-semibold mb-3">Modül süiti</h2>
+          <p className="text-sm text-slate-600 mb-3">{pack.tagline}</p>
           <div className="grid grid-cols-2 gap-2 text-sm">
             {[
+              ["/panel/gunluk", "Günlük rapor"],
               ["/panel/notlar", "Not defteri"],
               ["/panel/odevler", "Ödevler"],
               ["/panel/finans", "Ücret"],
               ["/panel/kayit", "Ön kayıt"],
               ["/panel/mesajlar", "Mesaj"],
               ["/panel/servis", "Servis"],
-            ].map(([href, label]) => (
+              ["/panel/teslim", "Teslim"],
+            ]
+              .filter(([href]) => !hiddenHrefs(pack.vertical).includes(href))
+              .map(([href, label]) => (
               <Link key={href} href={href} className="rounded-xl border border-slate-100 px-3 py-2 hover:bg-kampus-100">
                 {label}
               </Link>

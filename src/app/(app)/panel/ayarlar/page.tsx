@@ -53,6 +53,14 @@ export default async function SettingsPage({
           defaultValue={String(tenant.lateThresholdMinutes)}
         />
         <label className="text-sm font-medium">
+          Ürün dikeyi / lokalizasyon
+          <select className="select mt-1" name="vertical" defaultValue={tenant.vertical}>
+            <option value="KAMPUS">Kampüs (K-12)</option>
+            <option value="NIDO">Nido (anaokulu / kreş)</option>
+            <option value="KURS">Kurs (dershane)</option>
+          </select>
+        </label>
+        <label className="text-sm font-medium">
           KVKK maskeleme
           <select className="select mt-1" name="kvkkMasking" defaultValue={tenant.kvkkMasking}>
             <option value="NONE">Yok</option>

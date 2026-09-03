@@ -15,6 +15,8 @@ npm run dev
 
 Tarayıcı: [http://localhost:3000](http://localhost:3000)
 
+Üç dikey (aynı kod, tenant `vertical`): **Kampüs** (`sahip@xkolej.local`), **Nido** (`sahip@nido.local` / `veli@nido.local`), **Kurs** (`sahip@kurs.local`).
+
 Tüm demo hesapların parolası: **`Demo123!`**
 
 | Rol | E-posta |

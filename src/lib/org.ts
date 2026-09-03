@@ -51,6 +51,7 @@ export async function createTenant(
     ownerName?: string;
     ownerEmail?: string;
     ownerPassword?: string;
+    vertical?: "KAMPUS" | "NIDO" | "KURS";
   },
 ) {
   if (actor.role !== "PLATFORM_SUPER_ADMIN") throw new Error("Yetkisiz");
@@ -65,6 +66,7 @@ export async function createTenant(
       academicYearEnd,
       workStart: input.workStart || "08:00",
       workEnd: input.workEnd || "18:00",
+      vertical: input.vertical || "KAMPUS",
     },
   });
   if (input.ownerEmail) {
@@ -126,6 +128,7 @@ export async function updateTenantSettings(
     kvkkMasking: "NONE" | "PHONE" | "EMAIL" | "BOTH";
     notificationChannels: string[];
     timezone?: string;
+    vertical?: "KAMPUS" | "NIDO" | "KURS";
   },
 ) {
   if (!["PLATFORM_SUPER_ADMIN", "TENANT_OWNER"].includes(actor.role)) {
@@ -158,6 +161,7 @@ export async function updateTenantSettings(
       kvkkMasking: input.kvkkMasking,
       notificationChannels: JSON.stringify(channels.length ? channels : ["IN_APP"]),
       timezone: input.timezone || existing.timezone,
+      vertical: input.vertical || existing.vertical,
     },
   });
   await writeAudit({

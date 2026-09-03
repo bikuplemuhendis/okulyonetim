@@ -191,6 +191,12 @@ enum AbsenceKind {
   OTHER
 }
 
+enum Vertical {
+  KAMPUS
+  NIDO
+  KURS
+}
+
 model Tenant {
   id                           String       @id @default(cuid())
   name                         String
@@ -205,6 +211,7 @@ model Tenant {
   notificationChannels         String       @default("[\"IN_APP\",\"PUSH\"]")
   timezone                     String       @default("Europe/Istanbul")
   status                       String       @default("ACTIVE")
+  vertical                     Vertical     @default(KAMPUS)
   createdAt                    DateTime     @default(now())
   branches                     Branch[]
   users                        User[]
@@ -246,6 +253,8 @@ model Tenant {
   meetings                     ParentMeeting[]
   lessonTopics                 LessonTopic[]
   inventory                    InventoryItem[]
+  dailyReports                 DailyReport[]
+  pickupContacts               PickupContact[]
 }
 
 model Branch {
@@ -354,6 +363,7 @@ model User {
   visitorsHosted VisitorLog[]     @relation("VisitorHost")
   meetingsAsTeacher ParentMeeting[] @relation("MeetingTeacher")
   topicsTaught  LessonTopic[]
+  dailyReports  DailyReport[] @relation("DailyAuthor")
 }
 
 model UserBranchScope {
@@ -435,6 +445,8 @@ model Student {
   tutoringSlots TutoringSlot[]
   achievements  Achievement[]
   meetings      ParentMeeting[]
+  dailyReports  DailyReport[]
+  pickupContacts PickupContact[]
   @@unique([branchId, studentNo])
 }
 
@@ -1034,4 +1046,37 @@ model InventoryItem {
   qty         Int
   location    String
   assignedTo  String?
+}
+
+model DailyReport {
+  id               String   @id @default(cuid())
+  tenantId         String
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  studentId        String
+  student          Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  authorId         String
+  author           User     @relation("DailyAuthor", fields: [authorId], references: [id])
+  date             String
+  mood             String
+  meals            String
+  sleepMinutes     Int      @default(0)
+  toilet           String
+  activities       String
+  photoNote        String?
+  note             String
+  sharedWithParent Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  @@unique([studentId, date])
+}
+
+model PickupContact {
+  id         String  @id @default(cuid())
+  tenantId   String
+  tenant     Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  studentId  String
+  student    Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  name       String
+  phone      String
+  relation   String
+  allowed    Boolean @default(true)
 }

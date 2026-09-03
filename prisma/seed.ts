@@ -7,6 +7,8 @@ const PASSWORD = "Demo123!";
 
 async function wipe() {
   const models = [
+    "pickupContact",
+    "dailyReport",
     "surveyResponse",
     "homeworkSubmission",
     "gradeEntry",
@@ -92,6 +94,7 @@ async function main() {
       kvkkMasking: "PHONE",
       notificationChannels: JSON.stringify(["IN_APP", "PUSH", "SMS", "EMAIL"]),
       timezone: "Europe/Istanbul",
+      vertical: "KAMPUS",
     },
   });
 
@@ -938,8 +941,146 @@ async function main() {
     data: { tenantId: tenant.id, name: "Projeksiyon", category: "Demirbaş", qty: 4, location: "Depo A", assignedTo: "12-A" },
   });
 
+  const nido = await prisma.tenant.create({
+    data: {
+      name: "Minik Yuva",
+      taxNo: "1112223334",
+      academicYearStart: new Date("2026-09-01"),
+      academicYearEnd: new Date("2027-06-15"),
+      workStart: "08:00",
+      workEnd: "17:30",
+      vertical: "NIDO",
+    },
+  });
+  const nidoBranch = await prisma.branch.create({
+    data: {
+      tenantId: nido.id,
+      name: "Caddebostan",
+      code: "NIDO-01",
+      address: "Bağdat Cad. No:12",
+      city: "İstanbul",
+      district: "Kadıköy",
+    },
+  });
+  const nidoOwner = await prisma.user.create({
+    data: {
+      tenantId: nido.id,
+      name: "Yuva Müdürü",
+      email: "sahip@nido.local",
+      passwordHash: hash,
+      role: "TENANT_OWNER",
+    },
+  });
+  const nidoTeacher = await prisma.user.create({
+    data: {
+      tenantId: nido.id,
+      name: "Elif Eğitmen",
+      email: "ogretmen@nido.local",
+      passwordHash: hash,
+      role: "TEACHER",
+      scopes: { create: [{ branchId: nidoBranch.id }] },
+    },
+  });
+  const age3 = await prisma.classroom.create({
+    data: { tenantId: nido.id, branchId: nidoBranch.id, name: "3 Yaş A", gradeLevel: "3", section: "A", band: "ANAOKUL" },
+  });
+  const child = await prisma.student.create({
+    data: { tenantId: nido.id, branchId: nidoBranch.id, classroomId: age3.id, studentNo: "NIDO001", name: "Elif Minik" },
+  });
+  const nidoParent = await prisma.user.create({
+    data: {
+      tenantId: nido.id,
+      name: "Minik Veli",
+      email: "veli@nido.local",
+      passwordHash: hash,
+      role: "PARENT",
+      scopes: { create: [{ branchId: nidoBranch.id }] },
+    },
+  });
+  await prisma.parentStudent.create({
+    data: { parentId: nidoParent.id, studentId: child.id, relationship: "ANNE", kvkkConsent: true },
+  });
+  await prisma.dailyReport.create({
+    data: {
+      tenantId: nido.id,
+      studentId: child.id,
+      authorId: nidoTeacher.id,
+      date: now.dateStr,
+      mood: "Mutlu",
+      meals: "Kahvaltı ve öğle yedi",
+      sleepMinutes: 45,
+      toilet: "Bez 2 kez",
+      activities: "Bahçe + parmak boyası",
+      photoNote: "galeri://bahar-etkinligi",
+      note: "Bugün çok keyifliydi; su içirmeyi hatırlatın.",
+    },
+  });
+  await prisma.pickupContact.create({
+    data: { tenantId: nido.id, studentId: child.id, name: "Ayşe Teyze", phone: "+905551112233", relation: "Teyze" },
+  });
+  await prisma.announcement.create({
+    data: {
+      tenantId: nido.id,
+      branchId: nidoBranch.id,
+      title: "Yarın bahçe günü",
+      body: "09:30 bahçe etkinliği. Yedek kıyafet gönderiniz.",
+      audience: JSON.stringify(["PARENT"]),
+      authorId: nidoOwner.id,
+    },
+  });
+
+  const kurs = await prisma.tenant.create({
+    data: {
+      name: "Pusula Kurs",
+      academicYearStart: new Date("2026-09-01"),
+      academicYearEnd: new Date("2027-06-15"),
+      workStart: "09:00",
+      workEnd: "21:00",
+      vertical: "KURS",
+    },
+  });
+  const kursBranch = await prisma.branch.create({
+    data: {
+      tenantId: kurs.id,
+      name: "Kızılay Şube",
+      code: "KURS-01",
+      address: "Kızılay",
+      city: "Ankara",
+      district: "Çankaya",
+    },
+  });
+  await prisma.user.create({
+    data: {
+      tenantId: kurs.id,
+      name: "Kurs Sahibi",
+      email: "sahip@kurs.local",
+      passwordHash: hash,
+      role: "TENANT_OWNER",
+    },
+  });
+  const kursClass = await prisma.classroom.create({
+    data: { tenantId: kurs.id, branchId: kursBranch.id, name: "LGS-A", gradeLevel: "8", section: "A", band: "ORTAOKUL" },
+  });
+  await prisma.course.create({
+    data: { tenantId: kurs.id, name: "LGS Matematik", subject: "Sayısal", code: "LGSMAT", durationMinutes: 80 },
+  });
+  await prisma.admissionLead.create({
+    data: {
+      tenantId: kurs.id,
+      branchId: kursBranch.id,
+      ownerId: (await prisma.user.findUnique({ where: { email: "sahip@kurs.local" } }))!.id,
+      studentName: "Ada Kursiyer",
+      parentName: "Kurs Veli",
+      phone: "+905557778899",
+      gradeLevel: "8",
+      note: "Deneme kampı adayı",
+      status: "GUEST",
+    },
+  });
+  void kursClass;
+
   console.log("Seed tamam. Demo parola:", PASSWORD);
-  console.log("Girişler: super@kampus.local, sahip@xkolej.local, mudur@cankaya.local, ogretmen@cankaya.local, rehberlik@cankaya.local, veli@cankaya.local, ogrenci@cankaya.local");
+  console.log("Kampüs: sahip@xkolej.local · Nido: sahip@nido.local / veli@nido.local · Kurs: sahip@kurs.local");
 }
 
 main()

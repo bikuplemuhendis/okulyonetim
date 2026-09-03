@@ -73,8 +73,13 @@ const guidance: NavItem[] = [{ href: "/panel/rehberlik", label: "Rehberlik 360°
 const superAdmin: NavItem[] = [{ href: "/panel/firmalar", label: "Firmalar", group: "Platform" }];
 
 function fullSuite(extra: NavItem[] = []) {
-  return [...extra, ...org, ...academic, ...life, ...care, ...ops, ...comms, ...institution, ...insight, ...guidance];
+  return [...extra, ...org, ...academic, ...nidoOps, ...life, ...care, ...ops, ...comms, ...institution, ...insight, ...guidance];
 }
+
+const nidoOps: NavItem[] = [
+  { href: "/panel/gunluk", label: "Günlük rapor", group: "Bakım" },
+  { href: "/panel/teslim", label: "Teslim kişileri", group: "Bakım" },
+];
 
 export function navFor(role: Role): NavItem[] {
   switch (role) {
@@ -91,6 +96,7 @@ export function navFor(role: Role): NavItem[] {
         { href: "/panel/lokasyonlar", label: "Lokasyonlar", group: "Organizasyon" },
         { href: "/panel/kullanicilar", label: "Personel", group: "Organizasyon" },
         ...academic,
+        ...nidoOps,
         ...life,
         ...care,
         ...ops,
@@ -107,6 +113,7 @@ export function navFor(role: Role): NavItem[] {
         { href: "/panel/istisnalar", label: "İstisnalar", group: "Operasyon" },
         { href: "/panel/mazeretler", label: "Mazeretler", group: "Operasyon" },
         { href: "/panel/ziyaretci", label: "Ziyaretçi", group: "Operasyon" },
+        ...nidoOps,
         ...life,
         ...care,
         ...comms,
@@ -117,6 +124,7 @@ export function navFor(role: Role): NavItem[] {
       return [
         { href: "/panel", label: "Bugün", group: "Genel" },
         { href: "/panel/yoklama", label: "Sınıf defteri", group: "Operasyon" },
+        { href: "/panel/gunluk", label: "Günlük rapor", group: "Bakım" },
         { href: "/panel/program", label: "Programım", group: "Akademik" },
         { href: "/panel/ogrenciler", label: "Öğrencilerim", group: "Akademik" },
         { href: "/panel/notlar", label: "Not defteri", group: "Akademik" },
@@ -145,6 +153,7 @@ export function navFor(role: Role): NavItem[] {
     case "PARENT":
       return [
         { href: "/veli", label: "360° özet", group: "Veli" },
+        { href: "/veli/gunluk", label: "Günlük rapor", group: "Veli" },
         { href: "/veli/devamsizlik", label: "Devamsızlık", group: "Veli" },
         { href: "/veli/notlar", label: "Notlar", group: "Veli" },
         { href: "/veli/odevler", label: "Ödevler", group: "Veli" },
